@@ -33,6 +33,5 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B"]
 
-[tool.ty]
-python-version = "3.13"
-severity = "error" # Options: error, warn, info, ignore
+[tool.ty.rules]
+all = "error" # Options: error, warn, info, ignore
