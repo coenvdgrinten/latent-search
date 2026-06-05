@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-# This ensures 'latentsearch' can be resolved properly when running manage.py
+# This ensures 'latent_search' can be resolved properly when running manage.py
 sys.path.append(str(BASE_DIR / "src"))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "latentsearch.server.indexing",
+    "latent_search.server.indexing",
 ]
 
 MIDDLEWARE = [
