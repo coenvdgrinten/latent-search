@@ -1,4 +1,4 @@
-name: Lint
+name: Type Check
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  lint:
+  typecheck:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,8 +26,5 @@ jobs:
       - name: Install Dependencies
         run: uv sync --all-extras --dev
 
-      - name: Run Ruff Format Check
-        run: uv run ruff format --check
-
-      - name: Run Ruff Lint Check
-        run: uv run ruff check
+      - name: Run Ty Type Check
+        run: uv run ty check
