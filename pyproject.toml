@@ -1,0 +1,38 @@
+[project]
+name = "latent-search"
+version = "0.1.0"
+description = "A semantic, context-aware indexing and search tool for self-hosted media."
+readme = "README.md"
+authors = [
+    { name = "cvdgrinten", email = "coen@vd-grinten.nl" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.0.6",
+    "exif>=1.6.1",
+    "pillow>=12.2.0",
+    "qdrant-client>=1.18.0",
+    "torch>=2.12.0",
+    "transformers>=5.10.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.16",
+    "ty>=0.0.44",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B"]
+
+[tool.ty]
+python-version = "3.13"
+severity = "error" # Options: error, warn, info, ignore
