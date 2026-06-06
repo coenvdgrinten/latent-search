@@ -1,3 +1,5 @@
+from typing import override
+
 from django.db import models
 
 
@@ -6,7 +8,9 @@ class IndexedMedia(models.Model):
     Represents a media file found in the Nextcloud library.
     """
 
-    file_path = models.TextField(unique=True, help_text="Absolute path to the media file")
+    file_path = models.TextField(
+        unique=True, help_text="Absolute path to the media file"
+    )
     filename = models.CharField(max_length=255)
     relative_path = models.TextField(help_text="Path relative to the Nextcloud root")
 
@@ -24,7 +28,9 @@ class IndexedMedia(models.Model):
     # Embedding status
     is_indexed = models.BooleanField(default=False)
     indexed_at = models.DateTimeField(null=True, blank=True)
-    vector_id = models.UUIDField(null=True, blank=True, help_text="ID of the vector in Qdrant")
+    vector_id = models.UUIDField(
+        null=True, blank=True, help_text="ID of the vector in Qdrant"
+    )
 
     class Meta:
         verbose_name = "Indexed Media"
@@ -34,5 +40,6 @@ class IndexedMedia(models.Model):
             models.Index(fields=["taken_at"]),
         ]
 
+    @override
     def __str__(self):
         return f"{self.filename} ({'Indexed' if self.is_indexed else 'Pending'})"

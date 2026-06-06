@@ -35,3 +35,4 @@ select = ["E", "F", "I", "N", "UP", "B"]
 
 [tool.ty.rules]
 all = "error" # Options: error, warn, info, ignore
+unresolved-attribute = "ignore"

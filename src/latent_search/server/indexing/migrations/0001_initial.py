@@ -4,35 +4,61 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='IndexedMedia',
+            name="IndexedMedia",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file_path', models.TextField(help_text='Absolute path to the media file', unique=True)),
-                ('filename', models.CharField(max_length=255)),
-                ('relative_path', models.TextField(help_text='Path relative to the Nextcloud root')),
-                ('file_size', models.BigIntegerField(help_text='File size in bytes')),
-                ('mime_type', models.CharField(max_length=100)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('taken_at', models.DateTimeField(blank=True, null=True)),
-                ('width', models.IntegerField(blank=True, null=True)),
-                ('height', models.IntegerField(blank=True, null=True)),
-                ('is_indexed', models.BooleanField(default=False)),
-                ('indexed_at', models.DateTimeField(blank=True, null=True)),
-                ('vector_id', models.UUIDField(blank=True, help_text='ID of the vector in Qdrant', null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "file_path",
+                    models.TextField(
+                        help_text="Absolute path to the media file", unique=True
+                    ),
+                ),
+                ("filename", models.CharField(max_length=255)),
+                (
+                    "relative_path",
+                    models.TextField(help_text="Path relative to the Nextcloud root"),
+                ),
+                ("file_size", models.BigIntegerField(help_text="File size in bytes")),
+                ("mime_type", models.CharField(max_length=100)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("taken_at", models.DateTimeField(blank=True, null=True)),
+                ("width", models.IntegerField(blank=True, null=True)),
+                ("height", models.IntegerField(blank=True, null=True)),
+                ("is_indexed", models.BooleanField(default=False)),
+                ("indexed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "vector_id",
+                    models.UUIDField(
+                        blank=True, help_text="ID of the vector in Qdrant", null=True
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Indexed Media',
-                'verbose_name_plural': 'Indexed Media',
-                'indexes': [models.Index(fields=['is_indexed'], name='indexing_in_is_inde_b14bb9_idx'), models.Index(fields=['taken_at'], name='indexing_in_taken_a_9ee901_idx')],
+                "verbose_name": "Indexed Media",
+                "verbose_name_plural": "Indexed Media",
+                "indexes": [
+                    models.Index(
+                        fields=["is_indexed"], name="indexing_in_is_inde_b14bb9_idx"
+                    ),
+                    models.Index(
+                        fields=["taken_at"], name="indexing_in_taken_a_9ee901_idx"
+                    ),
+                ],
             },
         ),
     ]
