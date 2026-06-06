@@ -1,0 +1,32 @@
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty_cache/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Build/Dist
+build/
+dist/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
