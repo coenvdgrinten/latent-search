@@ -2,6 +2,7 @@
 
 [![Lint](https://github.com/coenvdgrinten/latent-search/actions/workflows/lint.yml/badge.svg)](https://github.com/coenvdgrinten/latent-search/actions/workflows/lint.yml)
 [![Type Check](https://github.com/coenvdgrinten/latent-search/actions/workflows/typecheck.yml/badge.svg)](https://github.com/coenvdgrinten/latent-search/actions/workflows/typecheck.yml)
+[![Tests](https://github.com/coenvdgrinten/latent-search/actions/workflows/test.yml/badge.svg)](https://github.com/coenvdgrinten/latent-search/actions/workflows/test.yml)
 [![Verified with ty](https://img.shields.io/badge/type__checker-ty-007acc?style=flat)](https://github.com/astral-sh/ty)
 [![Linted with Ruff](https://img.shields.io/badge/lint-Ruff-3670A0?style=flat&logo=python&logoColor=ffdd54)](https://github.com/astral-sh/ruff)
 [![Managed by uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)

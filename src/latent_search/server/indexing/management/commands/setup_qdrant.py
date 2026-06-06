@@ -11,8 +11,7 @@ class Command(BaseCommand):
 
     @override
     def handle(self, *args, **options):
-        # Read from your Tailscale network IP
-        host = os.environ.get("QDRANT_HOST", "100.x.x.x")
+        host = os.environ.get("QDRANT_HOST", "100.98.98.4")
         port = int(os.environ.get("QDRANT_PORT", 6333))
 
         self.stdout.write(f"Connecting to Qdrant at {host}:{port}...")
