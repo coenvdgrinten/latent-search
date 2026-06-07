@@ -70,6 +70,6 @@ class CLIPService:
             text_features = self.model.get_text_features(**inputs)
 
         # Normalize the embedding
-        text_features /= text_features.norm(dim=-1, keepdim=True)
+        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
         return text_features.cpu().numpy().flatten().tolist()

@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     @override
     def handle(self, *args, **options):
-        host = os.environ.get("QDRANT_HOST", "100.98.98.4")
+        host = os.environ.get("QDRANT_HOST", "localhost")
         port = int(os.environ.get("QDRANT_PORT", 6333))
 
         self.stdout.write(f"Connecting to Qdrant at {host}:{port}...")

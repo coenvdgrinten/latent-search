@@ -1,10 +1,11 @@
 import uuid
 from typing import override
 
+from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
-from ..models import IndexedMedia
+from latent_search.server.indexing.models import IndexedMedia
 
 
 class IndexedMediaModelTest(TestCase):
@@ -34,8 +35,6 @@ class IndexedMediaModelTest(TestCase):
 
     def test_unique_file_path(self):
         """Test that duplicate file paths are prevented."""
-        from django.db import IntegrityError
-
         with self.assertRaises(IntegrityError):
             IndexedMedia.objects.create(
                 file_path="/mnt/user/photos/vacation/beach.jpg",

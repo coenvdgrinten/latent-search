@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class IndexingConfig(AppConfig):
-    name = "indexing"
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "latent_search.server.indexing"
