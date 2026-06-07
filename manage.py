@@ -12,7 +12,9 @@ def main():
     if src_dir not in sys.path:
         sys.path.insert(0, src_dir)
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "latent_search.server.config.settings")
+    os.environ.setdefault(
+        "DJANGO_SETTINGS_MODULE", "latent_search.server.config.settings"
+    )
 
     # If 'test' is run without arguments, default to testing the indexing app
     # (since Django discovery doesn't find it automatically due to the nested structure)

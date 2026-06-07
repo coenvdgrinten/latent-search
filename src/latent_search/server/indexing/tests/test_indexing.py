@@ -1,9 +1,9 @@
 import uuid
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import numpy as np
 from django.test import TestCase
+
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.indexing import IndexingService
 
@@ -12,7 +12,9 @@ class IndexingServiceTest(TestCase):
     @patch("latent_search.server.indexing.services.indexing.DiscoveryService")
     @patch("latent_search.server.indexing.services.indexing.CLIPService")
     @patch("latent_search.server.indexing.services.indexing.VectorDBService")
-    def test_run_discovery(self, mock_vector_db_class, mock_clip_class, mock_discovery_class):
+    def test_run_discovery(
+        self, mock_vector_db_class, mock_clip_class, mock_discovery_class
+    ):
         service = IndexingService()
         # Setup
         mock_discovery = mock_discovery_class.return_value
@@ -30,7 +32,9 @@ class IndexingServiceTest(TestCase):
     @patch("latent_search.server.indexing.services.indexing.CLIPService")
     @patch("latent_search.server.indexing.services.indexing.VectorDBService")
     @patch("latent_search.server.indexing.services.indexing.DiscoveryService")
-    def test_index_pending_media(self, mock_discovery_class, mock_vector_db_class, mock_clip_class):
+    def test_index_pending_media(
+        self, mock_discovery_class, mock_vector_db_class, mock_clip_class
+    ):
         service = IndexingService()
         # Setup
         mock_clip = mock_clip_class.return_value

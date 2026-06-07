@@ -27,7 +27,9 @@ if str(BASE_DIR_SRC) not in sys.path:
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure--+mejq8e*=sbzox2hc7rtd*nzwb9p*3&f%fyy0*6n^tuz%u)!n")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure--+mejq8e*=sbzox2hc7rtd*nzwb9p*3&f%fyy0*6n^tuz%u)!n"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

@@ -1,7 +1,6 @@
 import uuid
 from typing import Any
 
-import numpy as np
 from django.conf import settings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
