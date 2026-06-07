@@ -26,13 +26,20 @@ class SearchServiceTest(TestCase):
 
         self.service = SearchService()
 
+    def _mock_query_points(self, hits: list) -> MagicMock:
+        """Helper to set up mock_client.query_points to return a list of hits."""
+        mock_result = MagicMock()
+        mock_result.points = hits
+        self.mock_client.query_points.return_value = mock_result
+        return mock_result
+
     def test_semantic_search_returns_correctly_shaped_dicts(self):
         """Each result dict should contain id, score, file_path, and file_name."""
         mock_hit = MagicMock()
         mock_hit.id = "abc-123"
         mock_hit.score = 0.95
         mock_hit.payload = {"file_path": "/tmp/photo.jpg", "file_name": "photo.jpg"}
-        self.mock_client.search.return_value = [mock_hit]
+        self._mock_query_points([mock_hit])
 
         results = self.service.semantic_search("a cat on a beach", limit=5)
 
@@ -44,20 +51,20 @@ class SearchServiceTest(TestCase):
 
     def test_semantic_search_passes_query_embedding_to_qdrant(self):
         """The text embedding for the query should be forwarded to Qdrant."""
-        self.mock_client.search.return_value = []
+        self._mock_query_points([])
 
         self.service.semantic_search("sunset over the ocean", limit=10)
 
         self.mock_clip.get_text_embedding.assert_called_once_with(
             "sunset over the ocean"
         )
-        search_kwargs = self.mock_client.search.call_args.kwargs
-        self.assertEqual(search_kwargs["query_vector"], [0.1] * 512)
+        search_kwargs = self.mock_client.query_points.call_args.kwargs
+        self.assertEqual(search_kwargs["query"], [0.1] * 512)
         self.assertEqual(search_kwargs["limit"], 10)
 
     def test_semantic_search_returns_empty_list_when_no_results(self):
         """Should return an empty list when Qdrant returns no hits."""
-        self.mock_client.search.return_value = []
+        self._mock_query_points([])
 
         results = self.service.semantic_search("nothing matches")
 
@@ -69,7 +76,7 @@ class SearchServiceTest(TestCase):
         mock_hit.id = "xyz"
         mock_hit.score = 0.5
         mock_hit.payload = {}
-        self.mock_client.search.return_value = [mock_hit]
+        self._mock_query_points([mock_hit])
 
         results = self.service.semantic_search("test query")
 

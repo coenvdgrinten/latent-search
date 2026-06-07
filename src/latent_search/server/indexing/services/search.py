@@ -20,19 +20,19 @@ class SearchService:
         query_embedding = self.clip_service.get_text_embedding(query)
 
         # Search in Qdrant
-        search_results = self.qdrant_client.search(
+        search_results = self.qdrant_client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_embedding,
-            limit=limit
-        )
+            query=query_embedding,
+            limit=limit,
+        ).points
 
         hits: list[dict] = []
         for hit in search_results:
             hits.append({
                 "id": hit.id,
                 "score": hit.score,
-                "file_path": hit.payload.get("file_path", ""),
-                "file_name": hit.payload.get("file_name", ""),
+                "file_path": hit.payload.get("file_path", "") if hit.payload else "",
+                "file_name": hit.payload.get("file_name", "") if hit.payload else "",
             })
 
         return hits

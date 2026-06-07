@@ -2,7 +2,7 @@ import logging
 
 import torch
 from PIL import Image
-from transformers import CLIPModel, CLIPProcessor, PreTrainedModel
+from transformers import CLIPModel, CLIPProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,9 @@ class CLIPService:
         if self._model is None:
             log_msg = f"Loading CLIP model '{self.model_id}' on device '{self.device}'"
             logger.info(log_msg)
-            model: PreTrainedModel = CLIPModel.from_pretrained(self.model_id)
-            if not isinstance(model, CLIPModel):
-                raise TypeError("Downloaded model is not a CLIPModel")
-            self._model = model.to(self.device)  # ty:ignore[invalid-argument-type]
+            self._model = CLIPModel.from_pretrained(self.model_id).to(
+                self.device  # ty:ignore[invalid-argument-type]
+            )
         return self._model
 
     @property
@@ -48,7 +47,8 @@ class CLIPService:
             raise
 
         with torch.no_grad():
-            image_features = self.model.get_image_features(**inputs)
+            vision_outputs = self.model.vision_model(**inputs)
+            image_features = self.model.visual_projection(vision_outputs.pooler_output)
 
         # Normalize the embedding
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
@@ -67,7 +67,8 @@ class CLIPService:
         ).to(self.device)
 
         with torch.no_grad():
-            text_features = self.model.get_text_features(**inputs)
+            text_outputs = self.model.text_model(**inputs)
+            text_features = self.model.text_projection(text_outputs.pooler_output)
 
         # Normalize the embedding
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
