@@ -133,7 +133,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 # Qdrant Settings
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+_qdrant_host = os.getenv("QDRANT_HOST", "localhost")
+_qdrant_port = os.getenv("QDRANT_PORT", "6333")
+QDRANT_URL = os.getenv("QDRANT_URL", f"http://{_qdrant_host}:{_qdrant_port}")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", None)
 QDRANT_COLLECTION = "media_embeddings"
 

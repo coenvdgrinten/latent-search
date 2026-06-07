@@ -20,7 +20,9 @@
   </header>
 
   <main>
-    {% if results %}
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% elif results %}
       <div class="results-grid">
         {% for result in results %}
           <div class="result-card">
