@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latent Search</title>
+    <link rel="stylesheet" href="{% static 'indexing/style.css' %}">
+</head>
+
+
+
+<body>
+  <header>
+    <h1>Latent Search</h1>
+    <form method="GET" action="">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search your photos...">
+        <button type="submit">Search</button>
+    </form>
+  </header>
+
+  <main>
+    {% if results %}
+      <div class="results-grid">
+        {% for result in results %}
+          <div class="result-card">
+            {{ result.file_name }}<br>
+            Score: {{ result.score|floatformat:2 }}<br>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </main>
+</body>
+</html>
