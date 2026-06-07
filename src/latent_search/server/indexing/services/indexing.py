@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 import uuid
 from pathlib import Path
 
@@ -39,6 +40,8 @@ class IndexingService:
             else:
                 rel_path = path.name
 
+            mime_type, _ = mimetypes.guess_type(path.name)
+
             # Using get_or_create to avoid duplicates by path
             IndexedMedia.objects.get_or_create(
                 file_path=abs_path,
@@ -46,6 +49,7 @@ class IndexingService:
                     "filename": path.name,
                     "relative_path": rel_path,
                     "file_size": file_size,
+                    "mime_type": mime_type or "",
                     "is_indexed": False,
                 },
             )

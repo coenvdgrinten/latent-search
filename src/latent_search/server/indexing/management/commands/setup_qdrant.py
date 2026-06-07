@@ -1,6 +1,6 @@
-import os
 from typing import override
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
@@ -11,13 +11,13 @@ class Command(BaseCommand):
 
     @override
     def handle(self, *args, **options):
-        host = os.environ.get("QDRANT_HOST", "localhost")
-        port = int(os.environ.get("QDRANT_PORT", 6333))
+        self.stdout.write(f"Connecting to Qdrant at {settings.QDRANT_URL}...")
+        client = QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY,
+        )
 
-        self.stdout.write(f"Connecting to Qdrant at {host}:{port}...")
-        client = QdrantClient(host=host, port=port)
-
-        collection_name = "nextcloud_media"
+        collection_name = settings.QDRANT_COLLECTION
 
         try:
             collections = client.get_collections().collections
