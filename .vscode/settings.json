@@ -1,0 +1,17 @@
+{
+    "python.analysis.languageServer": "Default",
+    "python.analysis.indexing": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "transformers",
+            "depth": 5,
+            "includeAllSymbols": true
+        },
+        {
+            "name": "torch",
+            "depth": 3,
+            "includeAllSymbols": true
+        }
+    ]
+}
