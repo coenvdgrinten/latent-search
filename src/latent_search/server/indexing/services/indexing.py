@@ -8,6 +8,7 @@ from django.db import transaction
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.clip import CLIPService
 from latent_search.server.indexing.services.discovery import DiscoveryService
+from latent_search.server.indexing.services.exif import ExifService
 from latent_search.server.indexing.services.vector_db import VectorDBService
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class IndexingService:
         self.discovery = DiscoveryService()
         self.clip = CLIPService()
         self.vector_db = VectorDBService()
+        self.exif = ExifService()
 
     def run_discovery(self, root_path: str | Path):
         """
@@ -41,6 +43,7 @@ class IndexingService:
                 rel_path = path.name
 
             mime_type, _ = mimetypes.guess_type(path.name)
+            meta = self.exif.read_metadata(path)
 
             # Using get_or_create to avoid duplicates by path
             IndexedMedia.objects.get_or_create(
@@ -50,6 +53,11 @@ class IndexingService:
                     "relative_path": rel_path,
                     "file_size": file_size,
                     "mime_type": mime_type or "",
+                    "taken_at": meta.taken_at,
+                    "width": meta.width,
+                    "height": meta.height,
+                    "latitude": meta.latitude,
+                    "longitude": meta.longitude,
                     "is_indexed": False,
                 },
             )
@@ -72,7 +80,13 @@ class IndexingService:
                     media.vector_id = uuid.uuid4()
 
                 payload = {
+                    "file_name": media.filename,
                     "file_path": media.file_path,
+                    "taken_at": media.taken_at.isoformat() if media.taken_at else None,
+                    "width": media.width,
+                    "height": media.height,
+                    "latitude": media.latitude,
+                    "longitude": media.longitude,
                 }
 
                 self.vector_db.upsert_embedding(

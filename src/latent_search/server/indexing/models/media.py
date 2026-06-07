@@ -24,6 +24,8 @@ class IndexedMedia(models.Model):
     taken_at = models.DateTimeField(null=True, blank=True)
     width = models.IntegerField(null=True, blank=True)
     height = models.IntegerField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
     # Embedding status
     is_indexed = models.BooleanField(default=False)
