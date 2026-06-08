@@ -3,6 +3,17 @@ import logging
 import torch
 from transformers import AutoModel  # ty: ignore[possibly-missing-import]
 
+# Transformers 5.x renamed clip_loss → contrastive_loss, but Jina CLIP v2's
+# dynamically-loaded code still imports the old name.  Monkey-patch it in
+# before the model loads so this survives cache resets.
+try:
+    from transformers.models.clip import modeling_clip
+
+    if not hasattr(modeling_clip, "clip_loss"):
+        modeling_clip.clip_loss = modeling_clip.contrastive_loss  # type: ignore[attr-defined]
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 VECTOR_DIM = 1024
