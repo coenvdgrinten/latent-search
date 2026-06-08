@@ -2,6 +2,7 @@ from django.conf import settings
 from httpx import ConnectError
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException
+from qdrant_client.models import Fusion, Prefetch
 
 from latent_search.server.indexing.services.clip import CLIPService
 
@@ -20,16 +21,32 @@ class SearchService:
         self.collection_name = settings.QDRANT_COLLECTION
 
     def semantic_search(self, query: str, limit: int = 24) -> list[dict]:
-        """Converts a text string to an embedding and finds matching records."""
-        # Generate embedding for the query
+        """
+        Converts a text string to an embedding and searches both the image
+        and text vectors in Qdrant, fusing results with Reciprocal Rank
+        Fusion (RRF).
+
+        - The image vector catches visually matching photos (scenes, textures,
+          composition) even when filenames lack context.
+        - The text vector catches semantic matches from enriched captions
+          (filenames, locations, timestamps).
+        - RRF merges both ranked lists into a single coherent ranking.
+        """
         query_embedding = self.clip_service.get_text_embedding(query)
 
-        # Search in Qdrant using the text vector
         try:
             search_results = self.qdrant_client.query_points(
                 collection_name=self.collection_name,
+                prefetch=[
+                    Prefetch(
+                        query=query_embedding,
+                        using="image",
+                        limit=limit,
+                    ),
+                ],
                 query=query_embedding,
                 using="text",
+                fusion=Fusion.RRF,
                 limit=limit,
             ).points
         except (ResponseHandlingException, ConnectError) as exc:
