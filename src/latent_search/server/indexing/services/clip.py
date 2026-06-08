@@ -1,7 +1,14 @@
 import logging
+import os
 
 import torch
 from transformers import AutoModel  # ty: ignore[possibly-missing-import]
+
+# Prevent PyTorch from using bfloat16 matmul on CPU. Modern Intel CPUs with
+# AVX-512 BF16 support will auto-promote fp32 matmuls to bf16, causing NaN
+# outputs in Jina CLIP v2's encoders.
+os.environ.setdefault("PYTORCH_DISABLE_AVX512_BF16_MATMUL", "1")
+torch.set_autocast_cpu_enabled(False)
 
 # Transformers 5.x renamed clip_loss → contrastive_loss, but Jina CLIP v2's
 # dynamically-loaded code still imports the old name.  Monkey-patch it in
@@ -43,13 +50,12 @@ class CLIPService:
     def model(self) -> AutoModel:
         if self._model is None:
             logger.info(f"Loading model '{self.model_id}'")
-            # Load in default (bfloat16) — the text encoder works correctly in
-            # bfloat16. Cast only the vision model to float32 to avoid NaN from
-            # corrupted bfloat16 RoPE buffers in the EVA02 vision encoder.
+            # Load in default precision, then cast everything to float32.
+            # Loading with torch_dtype=float32 breaks Jina's custom loader.
             self._model = AutoModel.from_pretrained(
                 self.model_id, trust_remote_code=True
             )
-            self._model.vision_model.to(torch.float32)
+            self._model.to(torch.float32)
             try:
                 self._fix_rope_buffers(self._model)
                 self._fix_lora_dropout_masks(self._model)
@@ -136,9 +142,10 @@ class CLIPService:
         missing or unreadable files.
         """
         try:
-            embeddings = self.model.encode_image(
-                [image_path], truncate_dim=self.truncate_dim
-            )
+            with torch.no_grad(), torch.amp.autocast("cpu", enabled=False):
+                embeddings = self.model.encode_image(
+                    [image_path], truncate_dim=self.truncate_dim
+                )
         except (FileNotFoundError, OSError) as e:
             logger.error(f"Failed to open image at '{image_path}': {e}")
             raise
@@ -154,7 +161,8 @@ class CLIPService:
         Use task=None when embedding document/caption text during indexing
         so query and passage vectors share the same space.
         """
-        embeddings = self.model.encode_text(
-            [text], truncate_dim=self.truncate_dim, task=task
-        )
+        with torch.no_grad(), torch.amp.autocast("cpu", enabled=False):
+            embeddings = self.model.encode_text(
+                [text], truncate_dim=self.truncate_dim, task=task
+            )
         return embeddings[0].tolist()

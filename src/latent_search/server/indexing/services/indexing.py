@@ -10,6 +10,7 @@ from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.clip import CLIPService
 from latent_search.server.indexing.services.discovery import DiscoveryService
 from latent_search.server.indexing.services.exif import ExifService
+from latent_search.server.indexing.services.geocoding import GeocodingService
 from latent_search.server.indexing.services.vector_db import VectorDBService
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class IndexingService:
         self.clip = CLIPService()
         self.vector_db = VectorDBService()
         self.exif = ExifService()
+        self.geocoding = GeocodingService()
 
     def run_discovery(self, root_path: str | Path):
         """
@@ -97,11 +99,12 @@ class IndexingService:
                     vector_id=media.vector_id,
                     image_embedding=image_embedding,
                     text_embedding=text_embedding,
-                    payload=payload,
+                    payload={"caption": text_caption, **payload},
                 )
 
                 with transaction.atomic():
                     media.is_indexed = True
+                    media.caption = text_caption
                     media.save()
 
             except Exception as e:
@@ -109,16 +112,64 @@ class IndexingService:
                 continue
 
     @staticmethod
-    def _build_text_caption(media: IndexedMedia) -> str:
+    def _build_temporal_context(media: IndexedMedia) -> str | None:
+        """Derive human-readable temporal descriptors from taken_at."""
+        if not media.taken_at:
+            return None
+
+        month_names = [
+            "january",
+            "february",
+            "march",
+            "april",
+            "may",
+            "june",
+            "july",
+            "august",
+            "september",
+            "october",
+            "november",
+            "december",
+        ]
+        season = (
+            "summer"
+            if media.taken_at.month in (6, 7, 8)
+            else "autumn"
+            if media.taken_at.month in (9, 10, 11)
+            else "winter"
+            if media.taken_at.month in (12, 1, 2)
+            else "spring"
+        )
+
+        hour = media.taken_at.hour
+        time_of_day = (
+            "early morning"
+            if 5 <= hour < 8
+            else "morning"
+            if 8 <= hour < 12
+            else "afternoon"
+            if 12 <= hour < 17
+            else "evening"
+            if 17 <= hour < 21
+            else "night"
+        )
+
+        month_word = month_names[media.taken_at.month - 1]
+        return f"{month_word} {media.taken_at.year} {season} {time_of_day}"
+
+    def _build_text_caption(self, media: IndexedMedia) -> str:
         """
-        Build a searchable text description from the filename and folder path.
-        Splits on hyphens, underscores, and path separators and deduplicates.
-        e.g. 'holidays/italy/lake-garda-sailing.jpg'
-        -> 'holidays italy lake garda sailing'
+        Build a searchable text description from filename, folder path,
+        reverse-geocoded location, and temporal context.
+
+        Parts are concatenated in order of importance (most semantically
+        dense first) to minimise CLIP truncation risk.
         """
-        path = Path(str(media.file_path))
+        segments: list[str] = []
+
+        # 1. Filename + relative folder path keywords (avoid absolute path noise)
+        path = Path(str(media.relative_path))
         stem = path.stem
-        # Include parent folder names (skip filesystem root parts like '/')
         folder_parts = [p for p in path.parts[:-1] if len(p) > 1 and p != "/"]
 
         raw_words: list[str] = []
@@ -126,5 +177,23 @@ class IndexingService:
             raw_words.extend(re.split(r"[-_\s]+", segment))
 
         words = [w.lower() for w in raw_words if w and not w.isdigit() and len(w) > 1]
-        # Preserve order while deduplicating
-        return " ".join(dict.fromkeys(words))
+        # Deduplicate while preserving order
+        path_keywords = " ".join(dict.fromkeys(words))
+        if path_keywords:
+            segments.append(path_keywords)
+
+        # 2. Reverse-geocoded location
+        if media.latitude is not None and media.longitude is not None:
+            location = self.geocoding.reverse_geocode(
+                float(media.latitude),  # ty: ignore[invalid-argument-type]
+                float(media.longitude),  # ty: ignore[invalid-argument-type]
+            )
+            if location:
+                segments.append(location.lower())
+
+        # 3. Temporal context
+        temporal = self._build_temporal_context(media)
+        if temporal:
+            segments.append(temporal)
+
+        return " ".join(segments) if segments else "unknown subject"

@@ -2,7 +2,7 @@ from django.conf import settings
 from httpx import ConnectError
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException
-from qdrant_client.models import Fusion, Prefetch
+from qdrant_client.models import Prefetch
 
 from latent_search.server.indexing.services.clip import CLIPService
 
@@ -46,7 +46,6 @@ class SearchService:
                 ],
                 query=query_embedding,
                 using="text",
-                fusion=Fusion.RRF,
                 limit=limit,
             ).points
         except (ResponseHandlingException, ConnectError) as exc:

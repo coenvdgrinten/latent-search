@@ -62,7 +62,6 @@ class SearchServiceTest(TestCase):
         self.assertEqual(search_kwargs["query"], [0.1] * 1024)
         self.assertEqual(search_kwargs["using"], "text")
         self.assertEqual(search_kwargs["limit"], 10)
-        self.assertIn("fusion", search_kwargs)
         self.assertIn("prefetch", search_kwargs)
         self.assertEqual(len(search_kwargs["prefetch"]), 1)
         self.assertEqual(search_kwargs["prefetch"][0].using, "image")

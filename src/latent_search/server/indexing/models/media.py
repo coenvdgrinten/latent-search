@@ -33,6 +33,11 @@ class IndexedMedia(models.Model):
     vector_id = models.UUIDField(
         null=True, blank=True, help_text="ID of the vector in Qdrant"
     )
+    caption = models.TextField(
+        default="",
+        blank=True,
+        help_text="Text caption used to generate the embedding",
+    )
 
     class Meta:
         verbose_name = "Indexed Media"
