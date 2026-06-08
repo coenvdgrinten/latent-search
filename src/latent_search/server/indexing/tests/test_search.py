@@ -22,7 +22,7 @@ class SearchServiceTest(TestCase):
 
         self.mock_clip = self.mock_clip_class.return_value
         self.mock_client = self.mock_qdrant_class.return_value
-        self.mock_clip.get_text_embedding.return_value = [0.1] * 512
+        self.mock_clip.get_text_embedding.return_value = [0.1] * 1024
 
         self.service = SearchService()
 
@@ -59,7 +59,8 @@ class SearchServiceTest(TestCase):
             "sunset over the ocean"
         )
         search_kwargs = self.mock_client.query_points.call_args.kwargs
-        self.assertEqual(search_kwargs["query"], [0.1] * 512)
+        self.assertEqual(search_kwargs["query"], [0.1] * 1024)
+        self.assertEqual(search_kwargs["using"], "text")
         self.assertEqual(search_kwargs["limit"], 10)
 
     def test_semantic_search_returns_empty_list_when_no_results(self):

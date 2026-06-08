@@ -39,16 +39,17 @@ class IndexingServiceTest(TestCase):
         # Setup
         mock_clip = mock_clip_class.return_value
         mock_vector_db = mock_vector_db_class.return_value
-        
-        mock_clip.get_image_embedding.return_value = [0.0] * 512
-        
+
+        mock_clip.get_image_embedding.return_value = [0.0] * 1024
+        mock_clip.get_text_embedding.return_value = [0.0] * 1024
+
         media = IndexedMedia.objects.create(
             file_path="/tmp/test.jpg",
             filename="test.jpg",
             relative_path="test.jpg",
             file_size=1024,
             vector_id=uuid.uuid4(),
-            is_indexed=False
+            is_indexed=False,
         )
 
         # Execute
@@ -110,7 +111,8 @@ class IndexingServiceTest(TestCase):
     ):
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
-        mock_clip.get_image_embedding.return_value = [0.0] * 512
+        mock_clip.get_image_embedding.return_value = [0.0] * 1024
+        mock_clip.get_text_embedding.return_value = [0.0] * 1024
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/no_id.jpg",

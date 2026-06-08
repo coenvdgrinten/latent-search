@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from httpx import ConnectError
 from qdrant_client import QdrantClient
@@ -25,11 +24,12 @@ class SearchService:
         # Generate embedding for the query
         query_embedding = self.clip_service.get_text_embedding(query)
 
-        # Search in Qdrant
+        # Search in Qdrant using the text vector
         try:
             search_results = self.qdrant_client.query_points(
                 collection_name=self.collection_name,
                 query=query_embedding,
+                using="text",
                 limit=limit,
             ).points
         except (ResponseHandlingException, ConnectError) as exc:
@@ -39,11 +39,17 @@ class SearchService:
 
         hits: list[dict] = []
         for hit in search_results:
-            hits.append({
-                "id": hit.id,
-                "score": hit.score,
-                "file_path": hit.payload.get("file_path", "") if hit.payload else "",
-                "file_name": hit.payload.get("file_name", "") if hit.payload else "",
-            })
+            hits.append(
+                {
+                    "id": hit.id,
+                    "score": hit.score,
+                    "file_path": hit.payload.get("file_path", "")
+                    if hit.payload
+                    else "",
+                    "file_name": hit.payload.get("file_name", "")
+                    if hit.payload
+                    else "",
+                }
+            )
 
         return hits

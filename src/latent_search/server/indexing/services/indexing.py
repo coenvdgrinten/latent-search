@@ -1,5 +1,6 @@
 import logging
 import mimetypes
+import re
 import uuid
 from pathlib import Path
 
@@ -73,7 +74,10 @@ class IndexingService:
         for media in pending:
             try:
                 logger.info(f"Indexing {media.file_path}")
-                embedding = self.clip.get_image_embedding(media.file_path)
+                image_embedding = self.clip.get_image_embedding(media.file_path)
+
+                text_caption = self._build_text_caption(media)
+                text_embedding = self.clip.get_text_embedding(text_caption, task=None)
 
                 # Assign vector_id at indexing time if not set
                 if not media.vector_id:
@@ -90,7 +94,10 @@ class IndexingService:
                 }
 
                 self.vector_db.upsert_embedding(
-                    vector_id=media.vector_id, embedding=embedding, payload=payload
+                    vector_id=media.vector_id,
+                    image_embedding=image_embedding,
+                    text_embedding=text_embedding,
+                    payload=payload,
                 )
 
                 with transaction.atomic():
@@ -100,3 +107,24 @@ class IndexingService:
             except Exception as e:
                 logger.error(f"Failed to index {media.file_path}: {e}")
                 continue
+
+    @staticmethod
+    def _build_text_caption(media: IndexedMedia) -> str:
+        """
+        Build a searchable text description from the filename and folder path.
+        Splits on hyphens, underscores, and path separators and deduplicates.
+        e.g. 'holidays/italy/lake-garda-sailing.jpg'
+        -> 'holidays italy lake garda sailing'
+        """
+        path = Path(str(media.file_path))
+        stem = path.stem
+        # Include parent folder names (skip filesystem root parts like '/')
+        folder_parts = [p for p in path.parts[:-1] if len(p) > 1 and p != "/"]
+
+        raw_words: list[str] = []
+        for segment in [*folder_parts, stem]:
+            raw_words.extend(re.split(r"[-_\s]+", segment))
+
+        words = [w.lower() for w in raw_words if w and not w.isdigit() and len(w) > 1]
+        # Preserve order while deduplicating
+        return " ".join(dict.fromkeys(words))

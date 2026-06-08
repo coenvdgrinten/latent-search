@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('indexing', '0001_initial'),
+        ("indexing", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='indexedmedia',
-            name='latitude',
+            model_name="indexedmedia",
+            name="latitude",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='indexedmedia',
-            name='longitude',
+            model_name="indexedmedia",
+            name="longitude",
             field=models.FloatField(blank=True, null=True),
         ),
     ]

@@ -13,9 +13,7 @@ class SearchDashboardViewTest(TestCase):
 
     @patch("latent_search.server.indexing.views.search_view.render")
     @patch("latent_search.server.indexing.views.search_view.search_service")
-    def test_get_without_query_renders_empty_results(
-        self, mock_service, mock_render
-    ):
+    def test_get_without_query_renders_empty_results(self, mock_service, mock_render):
         """A GET request with no query string should render with empty results."""
         mock_render.return_value = MagicMock()
 
@@ -30,9 +28,7 @@ class SearchDashboardViewTest(TestCase):
 
     @patch("latent_search.server.indexing.views.search_view.render")
     @patch("latent_search.server.indexing.views.search_view.search_service")
-    def test_get_with_query_calls_search_service(
-        self, mock_service, mock_render
-    ):
+    def test_get_with_query_calls_search_service(self, mock_service, mock_render):
         """GET with ?q= should call semantic_search and pass results to context."""
         mock_render.return_value = MagicMock()
         mock_service.semantic_search.return_value = [
