@@ -42,16 +42,19 @@ Query time dropped from ~23s (CLIP cold start) to ~5.5s.
 Extract structured entities from user queries before they reach the search pipeline.
 
 ### Tasks
-- [ ] Implement a query parser that detects:
-  - **Locations** (cities, countries, regions) → map to `caption` payload filter or BM25 boost
+- [x] Implement a query parser that detects:
+  - **Locations** (cities, countries, regions) → handled by BGE embeddings (no filter needed)
   - **Dates/Years** (2012, "summer 2018", "last year") → map to `taken_at` payload filter
   - **Objects/Concepts** (dog, beach, sunset) → pass to embedding models
-- [ ] Use spaCy or GLiNER for lightweight NER
-- [ ] Strip extracted entities from the semantic query text
-- [ ] Pass extracted entities to Qdrant as `must` filters during search
+- [x] ~~Use spaCy or GLiNER for lightweight NER~~ — skipped, BGE + regex is sufficient
+- [x] ~~Strip extracted entities from the semantic query text~~ — not needed, BGE handles full query
+- [x] Pass extracted entities to Qdrant as `must`/`should` filters during search
+
+### Decision: No NER needed
+BGE embeddings already match location names accurately. The regex parser handles dates exactly where precision matters. NER would add ~50MB+ dependencies and per-query latency without meaningful ranking improvements.
 
 ### Expected outcome
-"Photos from my trip to england in 2012" → filter by year/location, embed "trip" semantically.
+✅ "Photos from my trip to england in 2012" → filter by year, embed rest semantically.
 
 ---
 
