@@ -5,7 +5,6 @@ import uuid
 from pathlib import Path
 
 from django.db import transaction
-
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.clip import CLIPService
 from latent_search.server.indexing.services.discovery import DiscoveryService

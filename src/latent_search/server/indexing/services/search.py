@@ -2,11 +2,10 @@ from pathlib import Path
 
 from django.conf import settings
 from httpx import ConnectError
+from latent_search.server.indexing.services.clip import CLIPService
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException
 from qdrant_client.models import Prefetch
-
-from latent_search.server.indexing.services.clip import CLIPService
 
 
 class QdrantUnavailableError(Exception):

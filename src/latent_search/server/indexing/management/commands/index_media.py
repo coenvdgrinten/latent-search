@@ -1,7 +1,6 @@
 from typing import override
 
 from django.core.management.base import BaseCommand, CommandParser
-
 from latent_search.server.indexing.services.indexing import IndexingService
 
 

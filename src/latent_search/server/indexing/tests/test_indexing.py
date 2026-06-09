@@ -4,7 +4,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase
-
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.indexing import IndexingService
 

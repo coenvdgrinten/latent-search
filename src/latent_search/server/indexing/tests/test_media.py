@@ -4,7 +4,6 @@ from typing import override
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
-
 from latent_search.server.indexing.models import IndexedMedia
 
 
