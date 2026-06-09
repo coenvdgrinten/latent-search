@@ -21,14 +21,19 @@ Swap CLIP-text for a dedicated text embedding model. This is likely the single b
 CLIP-text was trained to align text with images, not to match text to text. Models like `bge-large-en` or `gte-large` are trained specifically for semantic text retrieval and dramatically outperform CLIP-text on factual queries, even with identical captions. Our current captions already contain "greater london, england, united kingdom august 2018" — CLIP-text just can't match "england" to that text.
 
 ### Tasks
-- [ ] Evaluate candidate text embedding models (`bge-large-en`, `gte-large`, `jina-embeddings-v3`)
-- [ ] Add a separate "text" vector in Qdrant using the new model (keep CLIP-image as-is)
-- [ ] Update indexing pipeline to embed captions with the new model
-- [ ] Update search to use new model for query encoding
-- [ ] Benchmark: CLIP-text vs new model on test queries
+- [x] Evaluate candidate text embedding models (`bge-large-en`, `gte-large`, `jina-embeddings-v3`)
+- [x] Add a separate "text" vector in Qdrant using the new model (keep CLIP-image as-is)
+- [x] Update indexing pipeline to embed captions with the new model
+- [x] Update search to use new model for query encoding
+- [x] Benchmark: CLIP-text vs new model on test queries
+
+### Results
+Chose `BAAI/bge-large-en-v1.5` (1024-dim, matches existing Qdrant schema).
+Integration tests went from **7/13 passing** (CLIP-text) to **13/13 passing** (BGE).
+Query time dropped from ~23s (CLIP cold start) to ~5.5s.
 
 ### Expected outcome
-"Photos from my trip to england" finally matches captions containing "england" — without any structural changes to the search pipeline.
+✅ "Photos from my trip to england" finally matches captions containing "england" — without any structural changes to the search pipeline.
 
 ---
 
