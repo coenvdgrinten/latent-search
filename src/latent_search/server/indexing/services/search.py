@@ -2,7 +2,9 @@ from pathlib import Path
 
 from django.conf import settings
 from httpx import ConnectError
-from latent_search.server.indexing.services.clip import CLIPService
+from latent_search.server.indexing.services.text_embedding import (
+    TextEmbeddingService,
+)
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException
 from qdrant_client.models import Prefetch
@@ -14,7 +16,7 @@ class QdrantUnavailableError(Exception):
 
 class SearchService:
     def __init__(self) -> None:
-        self.clip_service = CLIPService()
+        self.text_embedding = TextEmbeddingService()
         self.qdrant_client = QdrantClient(
             url=settings.QDRANT_URL,
             api_key=settings.QDRANT_API_KEY,
@@ -51,7 +53,7 @@ class SearchService:
           (filenames, locations, timestamps).
         - RRF merges both ranked lists into a single coherent ranking.
         """
-        query_embedding = self.clip_service.get_text_embedding(query)
+        query_embedding = self.text_embedding.encode(query)
 
         try:
             search_results = self.qdrant_client.query_points(

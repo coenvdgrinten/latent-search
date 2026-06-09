@@ -10,6 +10,9 @@ from latent_search.server.indexing.services.clip import CLIPService
 from latent_search.server.indexing.services.discovery import DiscoveryService
 from latent_search.server.indexing.services.exif import ExifService
 from latent_search.server.indexing.services.geocoding import GeocodingService
+from latent_search.server.indexing.services.text_embedding import (
+    TextEmbeddingService,
+)
 from latent_search.server.indexing.services.vector_db import VectorDBService
 
 logger = logging.getLogger(__name__)
@@ -19,6 +22,7 @@ class IndexingService:
     def __init__(self):
         self.discovery = DiscoveryService()
         self.clip = CLIPService()
+        self.text_embedding = TextEmbeddingService()
         self.vector_db = VectorDBService()
         self.exif = ExifService()
         self.geocoding = GeocodingService()
@@ -78,7 +82,7 @@ class IndexingService:
                 image_embedding = self.clip.get_image_embedding(media.file_path)
 
                 text_caption = self._build_text_caption(media)
-                text_embedding = self.clip.get_text_embedding(text_caption, task=None)
+                text_embedding = self.text_embedding.encode(text_caption)
 
                 # Assign vector_id at indexing time if not set
                 if not media.vector_id:
