@@ -3,6 +3,7 @@ from typing import override
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+
 from latent_search.server.indexing.services.vector_db import VectorDBService
 
 

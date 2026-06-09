@@ -58,9 +58,12 @@ BGE embeddings already match location names accurately. The regex parser handles
 
 ---
 
-## Phase 3: Hybrid Search (High Impact, Medium Effort)
+## Phase 3: Hybrid Search (Deferred)
 
 Add sparse/keyword matching alongside dense vector search.
+
+### Decision: Deferred until after Phase 4
+Phase 4 (VLM captions) provides bigger search quality gains with less implementation effort. BM25 will be more valuable after VLM enrichment (more text to tokenize).
 
 ### Tasks
 - [ ] Enable Qdrant sparse vectors (native support)
@@ -75,23 +78,38 @@ Exact keyword matches ("england", "2012", "tower bridge") rank highly even when 
 
 ---
 
-## Phase 4: Caption Enrichment (Lower Priority Than Initially Thought)
+## Phase 4: Caption Enrichment (COMPLETED)
 
 Generate richer textual descriptions of photos using a VLM.
 
 ### Rationale (updated)
-Our current captions already include good factual data ("greater london, england, united kingdom august 2018 summer afternoon"). The problem isn't caption quality — it's that CLIP-text can't match it. After Phases 1–3, evaluate whether VLM captions still add value. They may only be worth it for expanding visual concepts (objects, scenes, actions) that aren't in the filename/metadata.
+VLM captions provide massive semantic surface area for BGE embeddings. A caption like "A woman standing on a wooden pier overlooking a calm lake surrounded by mountains at golden hour" gives the search engine exponentially more to match against compared to "italy garda lake sailing club september 2018".
 
-### Tasks
-- [ ] Select a VLM (LLaVA, Qwen-VL, or similar) compatible with local CPU inference
-- [ ] Batch-process existing library to generate descriptive captions
-- [ ] Ground captions with EXIF data (inject known dates/locations into VLM prompt)
-- [ ] Optionally add OCR for text inside images (street signs, menus, etc.)
-- [ ] Store enriched captions in both DB and Qdrant payload
-- [ ] Re-index with improved captions for both dense and sparse vectors
+### Results
+Chose `Qwen/Qwen2.5-VL-3B-Instruct` for high-quality captions.
+- New `VLMService` with lazy loading, greedy decoding for consistency
+- `vlm_caption` field on `IndexedMedia` model (stored separately from combined caption)
+- `enrich_captions` management command with progress bar, resume support, checkpoints
+- VLM caption is prepended to factual caption during indexing
+- 4 new unit tests, all 19 tests passing
+
+### Usage
+```bash
+# Dry run first
+python manage.py enrich_captions --dry-run
+
+# Process all images without VLM captions
+python manage.py enrich_captions --batch-size 50
+
+# Reprocess images that already have captions
+python manage.py enrich_captions --reprocess
+
+# Limit to N images for testing
+python manage.py enrich_captions --limit 5
+```
 
 ### Expected outcome
-Photos get searchable descriptions like "family sitting around birthday cake with number 5, indoors, evening" instead of just "filename.jpg, city, country, date".
+✅ Photos get searchable descriptions like "family sitting around birthday cake with number 5, indoors, evening" instead of just "filename.jpg, city, country, date".
 
 ---
 
@@ -115,14 +133,14 @@ More consistent, measurable improvements in search quality.
 
 | Priority | Phase | Why |
 |----------|-------|-----|
-| 🔴 P0 | Phase 1: Better Text Embeddings | Biggest bang-for-buck — swap the model, keep everything else. May solve 80% of factual query failures alone. |
-| 🟡 P1 | Phase 2: Query Understanding | Converts natural language to structured filters. Works synergistically with Phase 1. |
-| 🟢 P2 | Phase 3: Hybrid Search | Catches edge cases dense model misses. Leverages Qdrant's native sparse vector support. |
-| ⚪ P3 | Phase 4: Caption Enrichment | Lower priority now — depends on whether Phases 1–3 are sufficient. |
-| ⚪ P4 | Phase 5: Reranking | Incremental polish after foundation is solid. |
+| ✅ Done | Phase 1: Better Text Embeddings | BGE replaced CLIP-text. 13/13 tests passing. |
+| ✅ Done | Phase 2: Query Understanding | Regex parser + payload filters. No NER needed. |
+| ✅ Done | Phase 4: Caption Enrichment | Qwen2.5-VL-3B VLM service + batch management command. Ready for production use. |
+| 🟢 P2 | Phase 3: Hybrid Search | Deferred — more valuable after VLM enrichment. |
+| ⚪ P3 | Phase 5: Reranking | Incremental polish after foundation is solid. |
 
 ---
 
 ## Key Insight
 
-**The problem is likely the embedding model, not the captions.** Our captions already contain "england", "2012", "london" — CLIP-text just can't match them because it was trained for image-text alignment, not text-text retrieval. Swapping to a dedicated text embedder (Phase 1) combined with query understanding (Phase 2) may get us to production-quality results without needing VLM captions, OCR, or cross-encoders.
+**The problem was both the embedding model AND the captions.** Phase 1 (BGE) solved factual matching ("england", "2012"). Phase 4 (VLM) solves visual matching ("birthday cake", "sunset", "mountains"). Together they cover the full spectrum of photo search queries.

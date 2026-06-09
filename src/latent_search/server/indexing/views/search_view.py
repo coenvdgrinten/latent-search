@@ -1,5 +1,6 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+
 from latent_search.server.indexing.services.search import (
     QdrantUnavailableError,
     SearchService,

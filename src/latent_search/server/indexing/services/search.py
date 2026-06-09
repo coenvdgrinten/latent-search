@@ -2,13 +2,6 @@ from pathlib import Path
 
 from django.conf import settings
 from httpx import ConnectError
-from latent_search.server.indexing.services.query_parser import (
-    ParsedQuery,
-    parse_query,
-)
-from latent_search.server.indexing.services.text_embedding import (
-    TextEmbeddingService,
-)
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import ResponseHandlingException
 from qdrant_client.models import (
@@ -17,6 +10,14 @@ from qdrant_client.models import (
     Filter,
     MatchText,
     Prefetch,
+)
+
+from latent_search.server.indexing.services.query_parser import (
+    ParsedQuery,
+    parse_query,
+)
+from latent_search.server.indexing.services.text_embedding import (
+    TextEmbeddingService,
 )
 
 

@@ -15,6 +15,7 @@ Requirements:
 from typing import override
 
 from django.test import TestCase
+
 from latent_search.server.indexing.services.search import (
     QdrantUnavailableError,
     SearchService,

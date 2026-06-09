@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 from django.db import transaction
+
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.clip import CLIPService
 from latent_search.server.indexing.services.discovery import DiscoveryService
@@ -14,6 +15,7 @@ from latent_search.server.indexing.services.text_embedding import (
     TextEmbeddingService,
 )
 from latent_search.server.indexing.services.vector_db import VectorDBService
+from latent_search.server.indexing.services.vlm import VLMService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class IndexingService:
         self.vector_db = VectorDBService()
         self.exif = ExifService()
         self.geocoding = GeocodingService()
+        self.vlm = VLMService()
 
     def run_discovery(self, root_path: str | Path):
         """
@@ -81,7 +84,9 @@ class IndexingService:
                 logger.info(f"Indexing {media.file_path}")
                 image_embedding = self.clip.get_image_embedding(media.file_path)
 
-                text_caption = self._build_text_caption(media)
+                text_caption = self._build_text_caption(
+                    media, vlm_caption=media.vlm_caption or None
+                )
                 text_embedding = self.text_embedding.encode(text_caption)
 
                 # Assign vector_id at indexing time if not set
@@ -160,15 +165,21 @@ class IndexingService:
         month_word = month_names[media.taken_at.month - 1]
         return f"{month_word} {media.taken_at.year} {season} {time_of_day}"
 
-    def _build_text_caption(self, media: IndexedMedia) -> str:
+    def _build_text_caption(
+        self, media: IndexedMedia, vlm_caption: str | None = None
+    ) -> str:
         """
-        Build a searchable text description from filename, folder path,
-        reverse-geocoded location, and temporal context.
+        Build a searchable text description from VLM visual description,
+        filename, folder path, reverse-geocoded location, and temporal context.
 
         Parts are concatenated in order of importance (most semantically
         dense first) to minimise CLIP truncation risk.
         """
         segments: list[str] = []
+
+        # 0. VLM-generated visual description (highest semantic density)
+        if vlm_caption:
+            segments.append(vlm_caption)
 
         # 1. Filename + relative folder path keywords (avoid absolute path noise)
         path = Path(str(media.relative_path))

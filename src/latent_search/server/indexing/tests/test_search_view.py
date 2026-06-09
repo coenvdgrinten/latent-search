@@ -2,6 +2,7 @@ from typing import override
 from unittest.mock import MagicMock, patch
 
 from django.test import RequestFactory, TestCase
+
 from latent_search.server.indexing.views.search_view import search_dashboard
 
 
