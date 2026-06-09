@@ -55,16 +55,39 @@ class SearchService:
 
         hits: list[dict] = []
         for hit in search_results:
+            payload = hit.payload or {}
+            taken_at = payload.get("taken_at")
+            lat = payload.get("latitude")
+            lon = payload.get("longitude")
+
+            # Parse date nicely
+            date_display = None
+            if taken_at:
+                try:
+                    from datetime import datetime
+
+                    dt = datetime.fromisoformat(taken_at.replace("Z", "+00:00"))
+                    date_display = dt.strftime("%b %Y")
+                except (ValueError, AttributeError):
+                    pass
+
+            # Location from caption (last comma-separated segment)
+            caption = payload.get("caption", "")
+            location = None
+            if lat is not None and lon is not None and caption:
+                parts = [p.strip() for p in caption.split(",")]
+                if len(parts) >= 2:
+                    location = ", ".join(parts[-3:])  # City, Region, Country
+
             hits.append(
                 {
                     "id": hit.id,
                     "score": hit.score,
-                    "file_path": hit.payload.get("file_path", "")
-                    if hit.payload
-                    else "",
-                    "file_name": hit.payload.get("file_name", "")
-                    if hit.payload
-                    else "",
+                    "file_path": payload.get("file_path", ""),
+                    "file_name": payload.get("file_name", ""),
+                    "image_url": None,  # TODO: wire up thumbnail serving
+                    "date_taken": date_display,
+                    "location": location,
                 }
             )
 

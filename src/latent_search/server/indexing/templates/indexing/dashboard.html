@@ -6,32 +6,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Latent Search</title>
     <link rel="stylesheet" href="{% static 'indexing/style.css' %}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
 </head>
-
-
 
 <body>
   <header>
-    <h1>Latent Search</h1>
-    <form method="GET" action="">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search your photos...">
-        <button type="submit">Search</button>
+    <h1><span>⬤</span> Latent Search</h1>
+    <form class="search-form" method="GET" action="">
+        <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search your photos…">
+        <button class="btn-primary" type="submit">Search</button>
     </form>
   </header>
 
   <main>
     {% if error %}
-      <p class="error">{{ error }}</p>
-    {% elif results %}
-      <div class="results-grid">
-        {% for result in results %}
-          <div class="result-card">
-            {{ result.file_name }}<br>
-            Score: {{ result.score|floatformat:2 }}<br>
-          </div>
-        {% endfor %}
+      <div class="error-banner">{{ error }}</div>
+    {% elif query %}
+      <div class="query-info">
+        <span>{{ results|length }} result{{ results|length|pluralize }} for "{{ query }}"</span>
+      </div>
+      {% if results %}
+        <div class="results-grid">
+          {% for result in results %}
+            <div class="result-card">
+              <div class="card-image-wrapper">
+                {% if result.image_url %}
+                  <img src="{{ result.image_url }}" alt="{{ result.file_name }}" loading="lazy">
+                {% else %}
+                  <div class="card-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"/></svg>
+                    <span>No preview</span>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                <div class="card-title" title="{{ result.file_name }}">{{ result.file_name }}</div>
+                <div class="card-meta">
+                  <span class="meta-tag meta-score">Score {{ result.score|floatformat:2 }}</span>
+                  {% if result.date_taken %}<span class="meta-tag meta-date">{{ result.date_taken }}</span>{% endif %}
+                  {% if result.location %}<span class="meta-tag meta-location">{{ result.location }}</span>{% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+          <p>No results found</p>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+        <p>Search your photo library</p>
       </div>
     {% endif %}
   </main>
+
+  <footer>
+    Powered by CLIP · Qdrant · Django
+  </footer>
 </body>
 </html>
