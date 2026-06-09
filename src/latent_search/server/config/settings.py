@@ -132,6 +132,12 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Media files
+# https://docs.djangoproject.com/en/6.0/topics/files/
+
+MEDIA_ROOT = BASE_DIR.parent.parent.parent / "media"
+MEDIA_URL = "/media/"
+
 # Qdrant Settings
 _qdrant_host = os.getenv("QDRANT_HOST", "localhost")
 _qdrant_port = os.getenv("QDRANT_PORT", "6333")

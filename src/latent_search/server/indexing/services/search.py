@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.conf import settings
 from httpx import ConnectError
 from qdrant_client import QdrantClient
@@ -19,6 +21,24 @@ class SearchService:
             api_key=settings.QDRANT_API_KEY,
         )
         self.collection_name = settings.QDRANT_COLLECTION
+
+    def _construct_image_url(self, file_path: str) -> str | None:
+        """
+        Construct a URL for serving the image file.
+
+        Maps the absolute file path to a media URL based on MEDIA_ROOT.
+        For example: /path/to/media/photos/img.jpg -> /media/photos/img.jpg
+        """
+        if not file_path:
+            return None
+
+        media_root = Path(settings.MEDIA_ROOT).resolve()
+        try:
+            relative = Path(file_path).resolve().relative_to(media_root)
+            return f"{settings.MEDIA_URL}{relative}"
+        except ValueError:
+            # File is not under MEDIA_ROOT
+            return None
 
     def semantic_search(self, query: str, limit: int = 24) -> list[dict]:
         """
@@ -85,7 +105,9 @@ class SearchService:
                     "score": hit.score,
                     "file_path": payload.get("file_path", ""),
                     "file_name": payload.get("file_name", ""),
-                    "image_url": None,  # TODO: wire up thumbnail serving
+                    "image_url": self._construct_image_url(
+                        payload.get("file_path", "")
+                    ),
                     "date_taken": date_display,
                     "location": location,
                 }

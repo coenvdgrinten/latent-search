@@ -1,6 +1,5 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
-
 from latent_search.server.indexing.services.search import (
     QdrantUnavailableError,
     SearchService,
@@ -24,9 +23,19 @@ def search_dashboard(request: HttpRequest) -> HttpResponse:
                 " Is Qdrant running?"
             )
 
+    # HTMX requests get just the results fragment
+    if request.headers.get("HX-Request"):
+        template = (
+            "indexing/_results_fragment.html"
+            if not error
+            else "indexing/_error_fragment.html"
+        )
+    else:
+        template = "indexing/dashboard.html"
+
     context = {
         "query": query,
         "results": results,
         "error": error,
     }
-    return render(request, "indexing/dashboard.html", context)
+    return render(request, template, context)

@@ -17,17 +17,16 @@
     <div class="blob blob-3"></div>
   </div>
 
-  {% if query %}
-  <header id="site-header">
+  <!-- Header — always rendered, hidden off-screen in hero state -->
+  <header id="site-header"{% if not query %} class="hidden"{% endif %}>
     <h1><span>⬤</span> Latent Search</h1>
-    <form class="search-form" method="GET" action="">
-        <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search your photos…" autofocus>
+    <form class="search-form" id="header-search-form">
+        <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search your photos…"{% if query %} autofocus{% endif %}>
         <button class="btn-primary" type="submit">Search</button>
     </form>
   </header>
-  {% endif %}
 
-  <main>
+  <main id="main-content">
     {% if error %}
       <div class="error-banner">{{ error }}</div>
     {% elif query %}
@@ -67,10 +66,10 @@
       {% endif %}
     {% else %}
       <!-- Hero / Landing State -->
-      <div class="hero-container">
+      <div class="hero-container" id="hero">
         <h1 class="hero-logo">Latent Search</h1>
         <p class="hero-subtitle">Semantic photo search powered by AI</p>
-        <form class="search-form" method="GET" action="" id="hero-search-form">
+        <form class="search-form" id="hero-search-form">
             <input class="search-input" type="text" name="q" placeholder="Search your photos…" autocomplete="off" autofocus>
             <button class="btn-primary" type="submit">Search</button>
         </form>
@@ -79,13 +78,13 @@
   </main>
 
   {% if not query %}
-  <footer>
+  <footer id="footer">
     Powered by CLIP · Qdrant · Django
   </footer>
   {% endif %}
 
   <script>
-    // Smooth keyboard shortcut: press '/' to focus search
+    // Keyboard shortcut: press '/' to focus search
     document.addEventListener('keydown', (e) => {
       if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
         e.preventDefault();
@@ -94,16 +93,170 @@
       }
     });
 
-    // Animate header entrance on results pages
+    /**
+     * Perform search with smooth hero-to-results transition.
+     * Strategy: fetch first, then animate, then inject.
+     * This ensures animations are always synced with content arrival.
+     */
+    async function performSearch(query, fromHero) {
+      if (!query.trim()) return;
+
+      const hero = document.getElementById('hero');
+      const footer = document.getElementById('footer');
+      const header = document.getElementById('site-header');
+      const main = document.getElementById('main-content');
+
+      // Show loading state on the search button
+      const activeButton = (fromHero ? hero : header)?.querySelector('.btn-primary');
+      if (activeButton) {
+        activeButton.textContent = 'Searching…';
+        activeButton.disabled = true;
+      }
+
+      // Fetch results first
+      let html = null;
+      try {
+        const response = await fetch(`/?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          html = await response.text();
+        }
+      } catch (err) {
+        console.error('Search failed:', err);
+      }
+
+      // Restore button
+      if (activeButton) {
+        activeButton.textContent = 'Search';
+        activeButton.disabled = false;
+      }
+
+      // If fetch failed, fall back to navigation
+      if (!html) {
+        window.location.href = `/?q=${encodeURIComponent(query)}`;
+        return;
+      }
+
+      // Parse and extract main content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newMain = doc.querySelector('#main-content');
+      if (!newMain) {
+        window.location.href = `/?q=${encodeURIComponent(query)}`;
+        return;
+      }
+
+      // --- Now animate the transition ---
+      if (fromHero) {
+        // Hero fades + shrinks out
+        hero.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        hero.style.opacity = '0';
+        hero.style.transform = 'scale(0.95) translateY(-20px)';
+
+        // Footer fades out
+        if (footer) {
+          footer.style.transition = 'opacity 0.3s ease';
+          footer.style.opacity = '0';
+          setTimeout(() => footer?.remove(), 300);
+        }
+
+        // Header slides in from left
+        header.classList.remove('hidden');
+        header.classList.add('slide-in');
+
+        // Populate header search with the query
+        const headerInput = header.querySelector('[name="q"]');
+        if (headerInput) headerInput.value = query;
+
+        // Inject results after hero exit animation completes
+        setTimeout(() => {
+          main.innerHTML = newMain.innerHTML;
+          // Update URL without reload
+          const url = new URL(window.location);
+          url.searchParams.set('q', query);
+          window.history.pushState({}, '', url);
+        }, 400);
+      } else {
+        // Direct results swap (no hero involved)
+        main.innerHTML = newMain.innerHTML;
+      }
+    }
+
+    // Hero search form handler
+    const heroForm = document.getElementById('hero-search-form');
+    if (heroForm) {
+      heroForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = heroForm.querySelector('[name="q"]').value.trim();
+        performSearch(query, true);
+      });
+    }
+
+    // Header search form handler
+    const headerForm = document.getElementById('header-search-form');
+    if (headerForm) {
+      headerForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = headerForm.querySelector('[name="q"]').value.trim();
+        performSearch(query, false);
+      });
+    }
+
+    // Animate header entrance on direct results page load
     const header = document.getElementById('site-header');
-    if (header) {
-      header.classList.add('hiding');
+    if (header && !document.getElementById('hero')) {
+      header.classList.add('hidden');
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          header.classList.remove('hiding');
+          header.classList.remove('hidden');
+          header.classList.add('slide-in');
         });
       });
     }
+
+    // Rotating placeholder with example search prompts
+    (function() {
+      const heroInput = document.querySelector('#hero-search-form .search-input');
+      if (!heroInput) return;
+
+      const prompts = [
+        'Sunset photos from the beach',
+        'Group photos from my trip to Vietnam',
+        'Pictures of my dog playing in the park',
+        'Close-ups of flowers in the garden',
+        'Night shots of the city skyline',
+        'Family dinner last Christmas',
+        'Snowy mountain landscapes',
+        'Candid moments from the wedding',
+      ];
+
+      let promptIndex = 0;
+
+      function rotatePlaceholder() {
+        const input = document.querySelector('#hero-search-form .search-input');
+        if (!input) return;
+
+        // Skip rotation if user has typed something
+        if (input.value.length > 0) {
+          setTimeout(rotatePlaceholder, 1000);
+          return;
+        }
+
+        // Fade out, switch, fade in
+        input.classList.add('placeholder-rotating');
+
+        setTimeout(() => {
+          promptIndex = (promptIndex + 1) % prompts.length;
+          input.placeholder = prompts[promptIndex];
+          input.classList.remove('placeholder-rotating');
+        }, 400);
+
+        setTimeout(rotatePlaceholder, 3500);
+      }
+
+      // Start with first prompt
+      heroInput.placeholder = prompts[0];
+      setTimeout(rotatePlaceholder, 3000);
+    })();
   </script>
 </body>
 </html>
