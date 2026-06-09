@@ -36,7 +36,7 @@
       {% if results %}
         <div class="results-grid">
           {% for result in results %}
-            <div class="result-card">
+            <div class="result-card" role="button" tabindex="0" aria-label="View {{ result.file_name }}" data-lightbox-url="{{ result.image_url }}" data-lightbox-name="{{ result.file_name }}" data-lightbox-date="{{ result.date_taken|default_if_none:'' }}" data-lightbox-location="{{ result.location|default_if_none:'' }}" data-lightbox-dimensions="{{ result.dimensions|default_if_none:'' }}" data-lightbox-caption="{{ result.vlm_caption|default_if_none:'' }}">
               <div class="card-image-wrapper">
                 {% if result.image_url %}
                   <img src="{{ result.image_url }}" alt="{{ result.file_name }}" loading="lazy">
@@ -79,9 +79,32 @@
 
   {% if not query %}
   <footer id="footer">
-    Powered by CLIP · Qdrant · Django
+    Powered by CLIP · Qdrant · Qwen VLM · Django
   </footer>
   {% endif %}
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+    <button class="lightbox-close" aria-label="Close">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <button class="lightbox-nav lightbox-prev" aria-label="Previous image">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+    </button>
+    <button class="lightbox-nav lightbox-next" aria-label="Next image">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+    </button>
+    <div class="lightbox-content">
+      <div class="lightbox-image-wrapper">
+        <img id="lightbox-img" src="" alt="">
+      </div>
+      <div class="lightbox-details">
+        <div class="lightbox-name" id="lightbox-name"></div>
+        <div class="lightbox-tags" id="lightbox-tags"></div>
+        <div class="lightbox-caption" id="lightbox-caption"></div>
+      </div>
+    </div>
+  </div>
 
   <script>
     // Keyboard shortcut: press '/' to focus search
@@ -256,6 +279,108 @@
       // Start with first prompt
       heroInput.placeholder = prompts[0];
       setTimeout(rotatePlaceholder, 3000);
+    })();
+
+    // ── Lightbox ──
+    (function() {
+      const overlay = document.getElementById('lightbox');
+      const imgEl = document.getElementById('lightbox-img');
+      const nameEl = document.getElementById('lightbox-name');
+      const tagsEl = document.getElementById('lightbox-tags');
+      const captionEl = document.getElementById('lightbox-caption');
+      const closeBtn = overlay?.querySelector('.lightbox-close');
+      const prevBtn = overlay?.querySelector('.lightbox-prev');
+      const nextBtn = overlay?.querySelector('.lightbox-next');
+
+      if (!overlay) return;
+
+      let currentIndex = 0;
+      let cards: HTMLElement[] = [];
+
+      function openLightbox(card: HTMLElement) {
+        cards = Array.from(document.querySelectorAll('.result-card'));
+        currentIndex = cards.indexOf(card);
+
+        const url = card.dataset.lightboxUrl || '';
+        const name = card.dataset.lightboxName || '';
+        const date = card.dataset.lightboxDate || '';
+        const location = card.dataset.lightboxLocation || '';
+        const dimensions = card.dataset.lightboxDimensions || '';
+        const caption = card.dataset.lightboxCaption || '';
+
+        imgEl.src = url;
+        imgEl.alt = name;
+        nameEl.textContent = name;
+
+        // Build tags
+        tagsEl.innerHTML = '';
+        if (date) {
+          const span = document.createElement('span');
+          span.className = 'lightbox-tag lb-date';
+          span.textContent = date;
+          tagsEl.appendChild(span);
+        }
+        if (location) {
+          const span = document.createElement('span');
+          span.className = 'lightbox-tag lb-location';
+          span.textContent = location;
+          tagsEl.appendChild(span);
+        }
+        if (dimensions) {
+          const span = document.createElement('span');
+          span.className = 'lightbox-tag lb-dims';
+          span.textContent = dimensions;
+          tagsEl.appendChild(span);
+        }
+
+        // Caption
+        captionEl.textContent = caption || '';
+        captionEl.style.display = caption ? 'block' : 'none';
+
+        // Show/hide nav buttons
+        if (prevBtn) prevBtn.style.display = cards.length > 1 ? '' : 'none';
+        if (nextBtn) nextBtn.style.display = cards.length > 1 ? '' : 'none';
+
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('visible');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeLightbox() {
+        overlay.classList.remove('visible');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        setTimeout(() => { imgEl.src = ''; }, 300);
+      }
+
+      function navigate(dir: number) {
+        const next = (currentIndex + dir + cards.length) % cards.length;
+        openLightbox(cards[next]);
+      }
+
+      // Delegate clicks on result cards
+      document.addEventListener('click', (e) => {
+        const card = (e.target as HTMLElement).closest('.result-card');
+        if (card) openLightbox(card as HTMLElement);
+      });
+
+      // Keyboard navigation
+      document.addEventListener('keydown', (e) => {
+        if (!overlay.classList.contains('visible')) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') navigate(-1);
+        if (e.key === 'ArrowRight') navigate(1);
+      });
+
+      // Button handlers
+      if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+      if (prevBtn) prevBtn.addEventListener('click', () => navigate(-1));
+      if (nextBtn) nextBtn.addEventListener('click', () => navigate(1));
+
+      // Close on overlay background click
+      overlay.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement) === overlay) closeLightbox();
+      });
     })();
   </script>
 </body>

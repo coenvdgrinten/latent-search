@@ -199,6 +199,12 @@ class SearchService:
                     ),
                     "date_taken": date_display,
                     "location": location,
+                    "vlm_caption": payload.get("vlm_caption", ""),
+                    "dimensions": (
+                        f"{payload['width']}\u00d7{payload['height']}"
+                        if payload.get("width") and payload.get("height")
+                        else None
+                    ),
                 }
             )
 

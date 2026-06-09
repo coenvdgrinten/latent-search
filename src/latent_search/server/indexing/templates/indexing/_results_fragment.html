@@ -4,7 +4,7 @@
 {% if results %}
   <div class="results-grid">
     {% for result in results %}
-      <div class="result-card">
+      <div class="result-card" role="button" tabindex="0" aria-label="View {{ result.file_name }}" data-lightbox-url="{{ result.image_url }}" data-lightbox-name="{{ result.file_name }}" data-lightbox-date="{{ result.date_taken|default_if_none:'' }}" data-lightbox-location="{{ result.location|default_if_none:'' }}" data-lightbox-dimensions="{{ result.dimensions|default_if_none:'' }}" data-lightbox-caption="{{ result.vlm_caption|default_if_none:'' }}">
         <div class="card-image-wrapper">
           {% if result.image_url %}
             <img src="{{ result.image_url }}" alt="{{ result.file_name }}" loading="lazy">

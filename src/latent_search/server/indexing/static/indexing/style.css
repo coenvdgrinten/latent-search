@@ -560,6 +560,191 @@ footer {
   margin-top: var(--space-xl);
 }
 
+/* ── Clickable Result Cards ── */
+.result-card[role="button"] {
+  cursor: pointer;
+}
+
+.result-card[role="button"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Lightbox ── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.lightbox-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: var(--color-surface);
+  border: var(--glass-border);
+  border-radius: 50%;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lightbox-close:hover {
+  background: var(--color-surface-hover);
+  transform: scale(1.1);
+}
+
+.lightbox-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: var(--color-surface);
+  border: var(--glass-border);
+  border-radius: 50%;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lightbox-nav:hover {
+  background: var(--color-surface-hover);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightbox-nav svg {
+  width: 24px;
+  height: 24px;
+}
+
+.lightbox-prev {
+  left: var(--space-lg);
+}
+
+.lightbox-next {
+  right: var(--space-lg);
+}
+
+.lightbox-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 90vw;
+  max-height: 90vh;
+  gap: var(--space-lg);
+  animation: lightbox-zoom 0.3s ease-out;
+}
+
+@keyframes lightbox-zoom {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.lightbox-image-wrapper {
+  max-height: 65vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface-solid);
+}
+
+.lightbox-image-wrapper img {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+  display: block;
+}
+
+.lightbox-details {
+  background: var(--color-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 800px;
+}
+
+.lightbox-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  word-break: break-all;
+}
+
+.lightbox-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.lightbox-tag {
+  font-size: var(--font-size-sm);
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--color-text-muted);
+}
+
+.lb-date {
+  color: var(--color-text);
+}
+
+.lb-location {
+  color: var(--color-text);
+}
+
+.lightbox-caption {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--color-text);
+  padding: var(--space-md);
+  background: rgba(211, 47, 47, 0.08);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 8px 8px 0;
+}
+
 /* ── Scrollbar Styling ── */
 ::-webkit-scrollbar {
   width: 8px;
@@ -610,6 +795,32 @@ footer {
   .blob {
     filter: blur(60px);
     opacity: 0.3;
+  }
+
+  .lightbox-content {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .lightbox-image-wrapper img {
+    max-height: 50vh;
+  }
+
+  .lightbox-nav {
+    width: 40px;
+    height: 40px;
+  }
+
+  .lightbox-prev {
+    left: var(--space-sm);
+  }
+
+  .lightbox-next {
+    right: var(--space-sm);
+  }
+
+  .lightbox-details {
+    padding: var(--space-md);
   }
 }
 

@@ -101,6 +101,7 @@ class IndexingService:
                     "height": media.height,
                     "latitude": media.latitude,
                     "longitude": media.longitude,
+                    "vlm_caption": media.vlm_caption or "",
                 }
 
                 self.vector_db.upsert_embedding(
