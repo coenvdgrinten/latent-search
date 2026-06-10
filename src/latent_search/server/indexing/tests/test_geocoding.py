@@ -13,9 +13,7 @@ from latent_search.server.indexing.services.geocoding import (
     GeocodingService,
 )
 
-_REQUESTS_GET_PATCH = (
-    "latent_search.server.indexing.services.geocoding.requests.get"
-)
+_REQUESTS_GET_PATCH = "latent_search.server.indexing.services.geocoding.requests.get"
 
 
 class UserAgentTest(TestCase):

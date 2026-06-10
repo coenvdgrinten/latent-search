@@ -118,11 +118,9 @@ class Command(BaseCommand):
         self.stdout.write(f"\nFound {total} images to process.")
         if dry_run:
             self.stdout.write(
-                self.style.WARNING(
-                    "Dry run mode - no changes will be made."
-                )
+                self.style.WARNING("Dry run mode - no changes will be made.")
             )
-            for media in qs[:min(10, total)]:
+            for media in qs[: min(10, total)]:
                 self.stdout.write(f"  Would process: {media.filename}")
             if total > 10:
                 self.stdout.write(f"  ... and {total - 10} more")
@@ -150,7 +148,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"\r[{pct:5.1f}%] Processing {i+1}/{total} "
                     f"({eta_remaining/60:.1f}m remaining) ",
-                    ending=""
+                    ending="",
                 )
 
                 try:
@@ -176,12 +174,9 @@ class Command(BaseCommand):
                     error_count += 1
                 except Exception as e:
                     logger.error(
-                        f"Failed to process {media.file_path}: {e}",
-                        exc_info=True
+                        f"Failed to process {media.file_path}: {e}", exc_info=True
                     )
-                    self.stderr.write(
-                        f"\nError processing {media.filename}: {e}"
-                    )
+                    self.stderr.write(f"\nError processing {media.filename}: {e}")
                     error_count += 1
 
                 # Save checkpoint at batch boundaries
@@ -195,8 +190,7 @@ class Command(BaseCommand):
             self._save_state(state)
             self.stdout.write(
                 self.style.WARNING(
-                    f"Paused at {processed_count}/{total}. "
-                    "Run again to resume."
+                    f"Paused at {processed_count}/{total}. " "Run again to resume."
                 )
             )
             return

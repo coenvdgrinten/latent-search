@@ -1,6 +1,5 @@
 """Tests for the lightweight query parser."""
 
-
 from django.test import TestCase
 
 from latent_search.server.indexing.services.query_parser import (

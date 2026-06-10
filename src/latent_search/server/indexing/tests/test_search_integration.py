@@ -12,6 +12,7 @@ Requirements:
     - Qdrant running and reachable (QDRANT_URL env var or localhost:6333)
     - Collection indexed with media files
 """
+
 from typing import override
 
 from django.test import TestCase
