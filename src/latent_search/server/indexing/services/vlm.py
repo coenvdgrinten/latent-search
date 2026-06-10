@@ -6,6 +6,7 @@ semantic search indexing. Runs entirely on CPU with lazy loading.
 """
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from threading import Lock
 
@@ -13,7 +14,7 @@ import torch
 from PIL import Image
 from transformers import (
     AutoProcessor,
-    Qwen2VLForConditionalGeneration,  # ty: ignore[possibly-missing-import]
+    Qwen2_5_VLForConditionalGeneration,  # ty: ignore[possibly-missing-import]
 )
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class VLMService:
     def __init__(self, model_id: str = MODEL_ID):
         self.model_id = model_id
         self._processor: AutoProcessor | None = None
-        self._model: Qwen2VLForConditionalGeneration | None = None
+        self._model: Qwen2_5_VLForConditionalGeneration | None = None
         self._lock = Lock()
 
     @property
@@ -53,7 +54,7 @@ class VLMService:
         return self._processor
 
     @property
-    def model(self) -> Qwen2VLForConditionalGeneration:
+    def model(self) -> Qwen2_5_VLForConditionalGeneration:
         """Lazy-load the model on first access."""
         if self._model is None:
             with self._lock:
@@ -62,7 +63,7 @@ class VLMService:
                         f"Loading VLM model: {self.model_id} "
                         f"(this may take a moment on first load)"
                     )
-                    self._model = Qwen2VLForConditionalGeneration.from_pretrained(
+                    self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                         self.model_id,
                         torch_dtype=torch.float16,
                         device_map="cpu",
@@ -106,12 +107,19 @@ class VLMService:
         text_prompt = self.processor.apply_chat_template(
             messages, tokenize=False, add_generation_kwargs=True
         )
+        # transformers 5.x Qwen2.5-VL processor ignores return_tensors kwarg;
+        # convert the resulting lists to tensors manually.
         inputs = self.processor(  # ty: ignore[call-non-callable]
             text=[text_prompt],
             images=[image],
             padding=True,
-            return_tensors="pt",
         )
+        # transformers 5.x Qwen2.5-VL processor returns lists for some fields
+        # despite padding=True; convert them all to tensors.
+        list_to_tensor_keys = ("input_ids", "attention_mask", "mm_token_type_ids")
+        for key in list_to_tensor_keys:
+            if key in inputs and not hasattr(inputs[key], "shape"):
+                inputs[key] = torch.tensor(inputs[key])
 
         # Generate caption
         with torch.no_grad():
@@ -123,19 +131,27 @@ class VLMService:
 
         # Decode only the newly generated tokens
         generated_ids = [
-            output_ids[len(input_ids):]
-            for input_ids, output_ids in zip(
-                inputs.input_ids, output_ids, strict=True
-            )
+            output_ids[len(input_ids) :]
+            for input_ids, output_ids in zip(inputs.input_ids, output_ids, strict=True)
         ]
         caption = self.processor.batch_decode(
-            generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
+            generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0]
 
-        return caption.strip()
+        caption = caption.strip()
+
+        # Guard against degenerate outputs (e.g., model repeating a single
+        # character like "!"). Treat these as empty captions.
+        if len(set(caption)) < 5:
+            logger.warning(
+                f"Degenerate caption for {image_path}: {repr(caption[:50])}"
+            )
+            return ""
+
+        return caption
 
     def describe_batch(
-        self, image_paths: list[str | Path], max_tokens: int = 256
+        self, image_paths: Sequence[str | Path], max_tokens: int = 256
     ) -> list[str]:
         """
         Generate captions for multiple images sequentially.
