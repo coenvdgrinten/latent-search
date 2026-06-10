@@ -32,6 +32,35 @@ SEASON_MONTHS: dict[str, set[int]] = {
     "winter": {12, 1, 2},
 }
 
+FILLER_WORDS = frozenset(
+    [
+        # Common query prefixes/phrases
+        "photos",
+        "photo",
+        "pictures",
+        "picture",
+        "images",
+        "image",
+        "pics",
+        "pic",
+        "from",
+        "of",
+        "my",
+        "the",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "during",
+        "around",
+        "about",
+        "trip",
+        "vacation",
+        "holiday",
+    ]
+)
+
 
 @dataclass
 class ParsedQuery:
@@ -98,31 +127,3 @@ def parse_query(query: str) -> ParsedQuery:
     result.semantic_query = original
 
     return result
-
-
-FILLER_WORDS = frozenset([
-    # Common query prefixes/phrases
-    "photos",
-    "photo",
-    "pictures",
-    "picture",
-    "images",
-    "image",
-    "pics",
-    "pic",
-    "from",
-    "of",
-    "my",
-    "the",
-    "in",
-    "on",
-    "at",
-    "to",
-    "for",
-    "during",
-    "around",
-    "about",
-    "trip",
-    "vacation",
-    "holiday",
-])
