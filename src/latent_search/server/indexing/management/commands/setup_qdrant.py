@@ -5,6 +5,9 @@ from django.core.management.base import BaseCommand
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
+VECTOR_SIZE = 1024
+VECTOR_NAMES = ("image", "text")
+
 
 class Command(BaseCommand):
     help = "Initializes the necessary Qdrant collections."
@@ -31,14 +34,20 @@ class Command(BaseCommand):
                 )
                 return
 
-            # Initialize collection for OpenAI CLIP (512 dimensions)
+            # Create collection with named 'image' and 'text' vectors (1024-dim)
             client.create_collection(
                 collection_name=collection_name,
-                vectors_config=VectorParams(size=512, distance=Distance.COSINE),
+                vectors_config={
+                    name: VectorParams(
+                        size=VECTOR_SIZE, distance=Distance.COSINE
+                    )
+                    for name in VECTOR_NAMES
+                },
             )
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Successfully created collection '{collection_name}'."
+                    f"Successfully created collection '{collection_name}' "
+                    f"with {', '.join(VECTOR_NAMES)} vectors ({VECTOR_SIZE}-dim)."
                 )
             )
 
