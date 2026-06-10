@@ -295,9 +295,9 @@
       if (!overlay) return;
 
       let currentIndex = 0;
-      let cards: HTMLElement[] = [];
+      let cards = [];
 
-      function openLightbox(card: HTMLElement) {
+      function openLightbox(card) {
         cards = Array.from(document.querySelectorAll('.result-card'));
         currentIndex = cards.indexOf(card);
 
@@ -350,22 +350,22 @@
         overlay.classList.remove('visible');
         overlay.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
-        setTimeout(() => { imgEl.src = ''; }, 300);
+        setTimeout(function() { imgEl.src = ''; }, 300);
       }
 
-      function navigate(dir: number) {
+      function navigate(dir) {
         const next = (currentIndex + dir + cards.length) % cards.length;
         openLightbox(cards[next]);
       }
 
       // Delegate clicks on result cards
-      document.addEventListener('click', (e) => {
-        const card = (e.target as HTMLElement).closest('.result-card');
-        if (card) openLightbox(card as HTMLElement);
+      document.addEventListener('click', function(e) {
+        var card = e.target.closest('.result-card');
+        if (card) openLightbox(card);
       });
 
       // Keyboard navigation
-      document.addEventListener('keydown', (e) => {
+      document.addEventListener('keydown', function(e) {
         if (!overlay.classList.contains('visible')) return;
         if (e.key === 'Escape') closeLightbox();
         if (e.key === 'ArrowLeft') navigate(-1);
@@ -374,12 +374,12 @@
 
       // Button handlers
       if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
-      if (prevBtn) prevBtn.addEventListener('click', () => navigate(-1));
-      if (nextBtn) nextBtn.addEventListener('click', () => navigate(1));
+      if (prevBtn) prevBtn.addEventListener('click', function() { navigate(-1); });
+      if (nextBtn) nextBtn.addEventListener('click', function() { navigate(1); });
 
       // Close on overlay background click
-      overlay.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement) === overlay) closeLightbox();
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeLightbox();
       });
     })();
   </script>
