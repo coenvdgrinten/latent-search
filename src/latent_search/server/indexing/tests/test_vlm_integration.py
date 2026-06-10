@@ -22,11 +22,11 @@ class VLMServiceIntegrationTest(TestCase):
 
     @classmethod
     def find_test_images(cls) -> list[Path]:
-        """Locate test images in the project's media/ directory."""
-        media_root = Path(settings.MEDIA_ROOT).resolve()
-        if not media_root.is_dir():
+        """Locate test images in the fixtures directory."""
+        fixtures_dir = Path(__file__).parent / "fixtures" / "images"
+        if not fixtures_dir.is_dir():
             return []
-        return sorted(media_root.glob("*.jpg"))
+        return sorted(fixtures_dir.glob("*.jpg"))
 
     @classmethod
     @override
