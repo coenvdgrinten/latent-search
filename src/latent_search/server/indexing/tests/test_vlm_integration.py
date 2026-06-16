@@ -2,7 +2,7 @@
 
 These tests run the actual Qwen2.5-VL-3B model on test images stored
 in the media/ directory. They are slow (several minutes per image on CPU)
-and will skip if no test images are found.
+and will skip if no test images are found or no GPU is available.
 
 Run with:
     ./manage test latent_search.server.indexing.tests.test_vlm_integration
@@ -11,7 +11,7 @@ Run with:
 from pathlib import Path
 from typing import override
 
-from django.conf import settings
+import torch
 from django.test import TestCase
 
 from latent_search.server.indexing.services.vlm import VLMService
@@ -32,13 +32,20 @@ class VLMServiceIntegrationTest(TestCase):
     @override
     def setUpClass(cls) -> None:
         super().setUpClass()
+        if not torch.cuda.is_available():
+            cls._skip = "No GPU available (tests require CUDA)"
+            cls.images = []
+            cls._has_images = False
+            return
         cls.images = cls.find_test_images()
         cls._has_images = bool(cls.images)
+        if not cls._has_images:
+            cls._skip = "No test images found in media/"
 
     def test_describe_returns_non_empty_caption(self):
         """describe() should produce a non-empty string for a valid image."""
         if not self._has_images:
-            self.skipTest("No test images found in media/")
+            self.skipTest(getattr(self, '_skip', 'No test images'))
         service = VLMService()
         caption = service.describe(self.images[0])
 
@@ -60,7 +67,7 @@ class VLMServiceIntegrationTest(TestCase):
     def test_describe_different_images_produce_different_captions(self):
         """Different images should produce meaningfully different captions."""
         if not self._has_images:
-            self.skipTest("No test images found in media/")
+            self.skipTest(getattr(self, '_skip', 'No test images'))
         if len(self.images) < 2:
             self.skipTest("Need at least 2 test images")
 

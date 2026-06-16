@@ -11,10 +11,12 @@ Run with:
 Requirements:
     - Qdrant running and reachable (QDRANT_URL env var or localhost:6333)
     - Collection indexed with media files
+    - GPU available (tests use real model inference)
 """
 
 from typing import override
 
+import torch
 from django.test import TestCase
 
 from latent_search.server.indexing.services.search import (
@@ -56,6 +58,9 @@ class SearchRankingIntegrationTest(TestCase):
     @override
     def setUpClass(cls) -> None:
         super().setUpClass()
+        cls._gpu_available = torch.cuda.is_available()
+        if not cls._gpu_available:
+            return  # skipTest called per-test below
         cls.service = SearchService()
 
     def _rank_for_query(self, query: str) -> list[str]:
@@ -68,12 +73,9 @@ class SearchRankingIntegrationTest(TestCase):
         query: str,
         expected_filename_contains: str | tuple[str, ...],
     ) -> None:
-        """Assert the expected photo ranks #1 for the given query.
-
-        ``expected_filename_contains`` can be a single string or a tuple of
-        acceptable substrings (e.g., ``("italy", "japan")`` for ambiguous
-        visual queries).
-        """
+        """Assert the expected photo ranks #1 for the given query."""
+        if not self._gpu_available:
+            self.skipTest("No GPU available (integration tests require CUDA)")
         try:
             ranks = self._rank_for_query(query)
         except QdrantUnavailableError:
