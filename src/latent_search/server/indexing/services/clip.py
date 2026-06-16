@@ -4,6 +4,8 @@ import os
 import torch
 from transformers import AutoModel  # ty: ignore[possibly-missing-import]
 
+from latent_search.server.indexing.services.device import get_device
+
 # Prevent PyTorch from using bfloat16 matmul on CPU. Modern Intel CPUs with
 # AVX-512 BF16 support will auto-promote fp32 matmuls to bf16, causing NaN
 # outputs in Jina CLIP v2's encoders.
@@ -45,6 +47,7 @@ class CLIPService:
         self.model_id = model_id
         self.truncate_dim = truncate_dim
         self._model: AutoModel | None = None
+        self.device = get_device()
 
     @property
     def model(self) -> AutoModel:
@@ -56,6 +59,7 @@ class CLIPService:
                 self.model_id, trust_remote_code=True
             )
             self._model.to(torch.float32)
+            self._model.to(self.device)
             try:
                 self._fix_rope_buffers(self._model)
                 self._fix_lora_dropout_masks(self._model)
@@ -142,7 +146,8 @@ class CLIPService:
         missing or unreadable files.
         """
         try:
-            with torch.no_grad(), torch.amp.autocast("cpu", enabled=False):
+            device_type = "cuda" if self.device == "cuda" else "cpu"
+            with torch.no_grad(), torch.amp.autocast(device_type, enabled=True):
                 embeddings = self.model.encode_image(
                     [image_path], truncate_dim=self.truncate_dim
                 )

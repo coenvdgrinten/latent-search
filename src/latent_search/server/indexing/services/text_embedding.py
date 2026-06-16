@@ -3,6 +3,8 @@ import logging
 import torch
 from sentence_transformers import SentenceTransformer
 
+from latent_search.server.indexing.services.device import get_device
+
 logger = logging.getLogger(__name__)
 
 VECTOR_DIM = 1024
@@ -27,12 +29,13 @@ class TextEmbeddingService:
     ):
         self.model_id = model_id
         self._model: SentenceTransformer | None = None
+        self.device = get_device()
 
     @property
     def model(self) -> SentenceTransformer:
         if self._model is None:
             logger.info(f"Loading text embedding model '{self.model_id}'")
-            self._model = SentenceTransformer(self.model_id)
+            self._model = SentenceTransformer(self.model_id, device=self.device)
         return self._model
 
     def encode(self, text: str) -> list[float]:

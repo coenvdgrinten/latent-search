@@ -17,6 +17,8 @@ from transformers import (
     Qwen2_5_VLForConditionalGeneration,  # ty: ignore[possibly-missing-import]
 )
 
+from latent_search.server.indexing.services.device import get_device
+
 logger = logging.getLogger(__name__)
 
 # Hugging Face model ID for Qwen2.5-VL-3B
@@ -40,6 +42,7 @@ class VLMService:
         self._processor: AutoProcessor | None = None
         self._model: Qwen2_5_VLForConditionalGeneration | None = None
         self._lock = Lock()
+        self.device = get_device()
 
     @property
     def processor(self) -> AutoProcessor:
@@ -66,7 +69,7 @@ class VLMService:
                     self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                         self.model_id,
                         torch_dtype=torch.float16,
-                        device_map="cpu",
+                        device_map=self.device,
                         trust_remote_code=True,
                     )
                     self._model.eval()
@@ -85,6 +88,8 @@ class VLMService:
         """
         image = Image.open(image_path).convert("RGB")
 
+        image_tensor = image if self.device == "cpu" else image.to(self.device)
+
         # Build conversation for the processor
         messages = [
             {
@@ -96,7 +101,7 @@ class VLMService:
                 "content": [
                     {
                         "type": "image",
-                        "image": image,
+                        "image": image_tensor,
                     },
                     {"type": "text", "text": "Describe this image concisely."},
                 ],
@@ -111,7 +116,7 @@ class VLMService:
         # convert the resulting lists to tensors manually.
         inputs = self.processor(  # ty: ignore[call-non-callable]
             text=[text_prompt],
-            images=[image],
+            images=[image_tensor],
             padding=True,
         )
         # transformers 5.x Qwen2.5-VL processor returns lists for some fields
@@ -120,6 +125,10 @@ class VLMService:
         for key in list_to_tensor_keys:
             if key in inputs and not hasattr(inputs[key], "shape"):
                 inputs[key] = torch.tensor(inputs[key])
+
+        for key in list(inputs.keys()):
+            if isinstance(inputs[key], torch.Tensor):
+                inputs[key] = inputs[key].to(self.device)
 
         # Generate caption
         with torch.no_grad():
@@ -143,9 +152,7 @@ class VLMService:
         # Guard against degenerate outputs (e.g., model repeating a single
         # character like "!"). Treat these as empty captions.
         if len(set(caption)) < 5:
-            logger.warning(
-                f"Degenerate caption for {image_path}: {repr(caption[:50])}"
-            )
+            logger.warning(f"Degenerate caption for {image_path}: {repr(caption[:50])}")
             return ""
 
         return caption
