@@ -45,7 +45,7 @@ class VLMServiceIntegrationTest(TestCase):
     def test_describe_returns_non_empty_caption(self):
         """describe() should produce a non-empty string for a valid image."""
         if not self._has_images:
-            self.skipTest(getattr(self, '_skip', 'No test images'))
+            self.skipTest(getattr(self, "_skip", "No test images"))
         service = VLMService()
         caption = service.describe(self.images[0])
 
@@ -67,7 +67,7 @@ class VLMServiceIntegrationTest(TestCase):
     def test_describe_different_images_produce_different_captions(self):
         """Different images should produce meaningfully different captions."""
         if not self._has_images:
-            self.skipTest(getattr(self, '_skip', 'No test images'))
+            self.skipTest(getattr(self, "_skip", "No test images"))
         if len(self.images) < 2:
             self.skipTest("Need at least 2 test images")
 

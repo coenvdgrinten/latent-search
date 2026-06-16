@@ -87,7 +87,9 @@ class TextEmbeddingServiceEncodeTest(TestCase):
 
         service.encode("first call")
 
-        mock_st_class.assert_called_once_with("BAAI/bge-large-en-v1.5")
+        mock_st_class.assert_called_once()
+        call_kwargs = mock_st_class.call_args
+        self.assertEqual(call_kwargs.args[0], "BAAI/bge-large-en-v1.5")
 
     @patch(_MODEL_PATCH)
     def test_model_loaded_only_once(self, mock_st_class):

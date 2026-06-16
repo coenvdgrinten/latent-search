@@ -9,20 +9,20 @@ from latent_search.server.indexing.services.search import SearchService
 class SearchServiceTest(TestCase):
     @override
     def setUp(self):
-        clip_patcher = patch(
-            "latent_search.server.indexing.services.search.CLIPService"
+        text_emb_patcher = patch(
+            "latent_search.server.indexing.services.search.TextEmbeddingService"
         )
         qdrant_patcher = patch(
             "latent_search.server.indexing.services.search.QdrantClient"
         )
-        self.mock_clip_class = clip_patcher.start()
+        self.mock_text_emb_class = text_emb_patcher.start()
         self.mock_qdrant_class = qdrant_patcher.start()
-        self.addCleanup(clip_patcher.stop)
+        self.addCleanup(text_emb_patcher.stop)
         self.addCleanup(qdrant_patcher.stop)
 
-        self.mock_clip = self.mock_clip_class.return_value
+        self.mock_text_emb = self.mock_text_emb_class.return_value
         self.mock_client = self.mock_qdrant_class.return_value
-        self.mock_clip.get_text_embedding.return_value = [0.1] * 1024
+        self.mock_text_emb.encode.return_value = [0.1] * 1024
 
         self.service = SearchService()
 
@@ -55,9 +55,7 @@ class SearchServiceTest(TestCase):
 
         self.service.semantic_search("sunset over the ocean", limit=10)
 
-        self.mock_clip.get_text_embedding.assert_called_once_with(
-            "sunset over the ocean"
-        )
+        self.mock_text_emb.encode.assert_called_once_with("sunset over the ocean")
         search_kwargs = self.mock_client.query_points.call_args.kwargs
         self.assertEqual(search_kwargs["query"], [0.1] * 1024)
         self.assertEqual(search_kwargs["using"], "text")
