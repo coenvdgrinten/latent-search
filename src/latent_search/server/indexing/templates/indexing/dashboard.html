@@ -10,6 +10,17 @@
 </head>
 
 <body>
+  <!-- Loading overlay — shown while the embedding model warms up -->
+  {% if not model_ready %}
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <h2>Getting your models ready…</h2>
+      <p>Loading the text embedding model. This may take a moment on first start.</p>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Animated Background -->
   <div class="bg-animation">
     <div class="blob blob-1"></div>
@@ -235,6 +246,42 @@
         });
       });
     }
+
+    // Poll /ready endpoint and hide the loading overlay when the model is warm
+    (function() {
+      const overlay = document.getElementById('loading-overlay');
+      if (!overlay) return;
+
+      let attempts = 0;
+      const POLL_INTERVAL = 1000;
+      const MAX_ATTEMPTS = 120; // Give up after 2 minutes
+
+      function pollReady() {
+        fetch('/ready/')
+          .then(function(resp) { return resp.json(); })
+          .then(function(data) {
+            if (data.ready) {
+              overlay.classList.add('fade-out');
+              setTimeout(function() { overlay.remove(); }, 500);
+            } else if (attempts < MAX_ATTEMPTS) {
+              attempts++;
+              setTimeout(pollReady, POLL_INTERVAL);
+            } else {
+              // Timeout — hide overlay anyway so the user isn't stuck
+              overlay.classList.add('fade-out');
+              setTimeout(function() { overlay.remove(); }, 500);
+            }
+          })
+          .catch(function() {
+            if (attempts < MAX_ATTEMPTS) {
+              attempts++;
+              setTimeout(pollReady, POLL_INTERVAL);
+            }
+          });
+      }
+
+      setTimeout(pollReady, POLL_INTERVAL);
+    })();
 
     // Rotating placeholder with example search prompts
     (function() {

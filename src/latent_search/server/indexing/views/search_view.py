@@ -1,6 +1,7 @@
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 
+from latent_search.server.indexing.apps import _model_ready_event
 from latent_search.server.indexing.services.search import (
     QdrantUnavailableError,
     SearchService,
@@ -38,5 +39,11 @@ def search_dashboard(request: HttpRequest) -> HttpResponse:
         "query": query,
         "results": results,
         "error": error,
+        "model_ready": _model_ready_event.is_set(),
     }
     return render(request, template, context)
+
+
+def model_ready_check(_request: HttpRequest) -> JsonResponse:
+    """Returns JSON indicating whether the embedding model is warmed up."""
+    return JsonResponse({"ready": _model_ready_event.is_set()})
