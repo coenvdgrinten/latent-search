@@ -122,19 +122,60 @@ class SearchService:
         should = should_conditions if should_conditions else None
         return Filter(must=must, should=should)  # ty: ignore[invalid-argument-type]
 
+    def _hit_to_dict(self, hit) -> dict:
+        """
+        Convert a Qdrant search hit to a template-friendly dictionary.
+
+        Extracts payload fields and derives display-friendly values
+        (formatted date, location string, dimensions) from raw data.
+        """
+        from datetime import datetime
+
+        payload = hit.payload or {}
+        taken_at = payload.get("taken_at")
+        lat = payload.get("latitude")
+        lon = payload.get("longitude")
+
+        # Parse date nicely
+        date_display = None
+        if taken_at:
+            try:
+                dt = datetime.fromisoformat(taken_at.replace("Z", "+00:00"))
+                date_display = dt.strftime("%b %Y")
+            except (ValueError, AttributeError):
+                pass
+
+        # Location from caption (last comma-separated segment)
+        caption = payload.get("caption", "")
+        location = None
+        if lat is not None and lon is not None and caption:
+            parts = [p.strip() for p in caption.split(",")]
+            if len(parts) >= 2:
+                location = ", ".join(parts[-3:])  # City, Region, Country
+
+        return {
+            "id": hit.id,
+            "score": hit.score,
+            "file_path": payload.get("file_path", ""),
+            "file_name": payload.get("file_name", ""),
+            "image_url": self._construct_image_url(payload.get("file_path", "")),
+            "date_taken": date_display,
+            "location": location,
+            "vlm_caption": payload.get("vlm_caption", ""),
+            "dimensions": (
+                f"{payload['width']}\u00d7{payload['height']}"
+                if payload.get("width") and payload.get("height")
+                else None
+            ),
+        }
+
     def semantic_search(self, query: str, limit: int = 24) -> list[dict]:
         """
-        Converts a text string to an embedding and searches both the image
-        and text vectors in Qdrant, fusing results with Reciprocal Rank
-        Fusion (RRF). Applies payload filters derived from extracted
-        structured entities (dates, locations).
+        Dual-vector RRF search: image vector for visual matches, text
+        vector for semantic caption matches, fused by Qdrant prefetch.
 
-        - The image vector catches visually matching photos (scenes, textures,
-          composition) even when filenames lack context.
-        - The text vector catches semantic matches from enriched captions
-          (filenames, locations, timestamps).
-        - Payload filters narrow results by year, season, or location.
-        - RRF merges both ranked lists into a single coherent ranking.
+        Applies payload filters derived from structured entities
+        (dates, seasons, locations) extracted by the query parser.
         """
         parsed = parse_query(query)
         query_embedding = self.text_embedding.encode(query)
@@ -162,50 +203,4 @@ class SearchService:
                 "Could not connect to Qdrant. Is the Qdrant service running?"
             ) from exc
 
-        hits: list[dict] = []
-        for hit in search_results:
-            payload = hit.payload or {}
-            taken_at = payload.get("taken_at")
-            lat = payload.get("latitude")
-            lon = payload.get("longitude")
-
-            # Parse date nicely
-            date_display = None
-            if taken_at:
-                try:
-                    from datetime import datetime
-
-                    dt = datetime.fromisoformat(taken_at.replace("Z", "+00:00"))
-                    date_display = dt.strftime("%b %Y")
-                except (ValueError, AttributeError):
-                    pass
-
-            # Location from caption (last comma-separated segment)
-            caption = payload.get("caption", "")
-            location = None
-            if lat is not None and lon is not None and caption:
-                parts = [p.strip() for p in caption.split(",")]
-                if len(parts) >= 2:
-                    location = ", ".join(parts[-3:])  # City, Region, Country
-
-            hits.append(
-                {
-                    "id": hit.id,
-                    "score": hit.score,
-                    "file_path": payload.get("file_path", ""),
-                    "file_name": payload.get("file_name", ""),
-                    "image_url": self._construct_image_url(
-                        payload.get("file_path", "")
-                    ),
-                    "date_taken": date_display,
-                    "location": location,
-                    "vlm_caption": payload.get("vlm_caption", ""),
-                    "dimensions": (
-                        f"{payload['width']}\u00d7{payload['height']}"
-                        if payload.get("width") and payload.get("height")
-                        else None
-                    ),
-                }
-            )
-
-        return hits
+        return [self._hit_to_dict(hit) for hit in search_results]
