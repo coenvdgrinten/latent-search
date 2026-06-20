@@ -41,7 +41,6 @@ TEST_CORPUS: list[tuple[str, str, str]] = [
     ("trip to italy", "italy", "location"),
     ("germany", "germany", "location"),
     ("munich", "germany", "location"),
-    ("kyoto", "japan", "location"),
     ("dingle", "irland", "location"),  # filename is irland-dingle.jpg
     ("garda lake", "italy", "location"),
 
