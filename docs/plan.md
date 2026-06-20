@@ -58,23 +58,43 @@ BGE embeddings already match location names accurately. The regex parser handles
 
 ---
 
-## Phase 3: Hybrid Search (Deferred)
+## Phase 3: Hybrid Search — SPLATE-Based Lexical Matching
 
-Add sparse/keyword matching alongside dense vector search.
+Add learned sparse vector matching alongside dense vector search for exact keyword retrieval.
 
-### Decision: Deferred until after Phase 4
-Phase 4 (VLM captions) provides bigger search quality gains with less implementation effort. BM25 will be more valuable after VLM enrichment (more text to tokenize).
+### Why SPLADE Over BM25?
+The original plan called for BM25, but research shows **SPLADE** (learned sparse embeddings) significantly outperforms BM25:
+
+| Model | BEIR Avg nDCG@10 | Params |
+|-------|-------------------|--------|
+| `opensearch-neural-sparse-encoding-v2-distill` | **52.8** | 67M |
+| `naver/splade-v3` | **51.7** | 109M |
+| **BM25 (baseline)** | **45.6** | N/A |
+
+~13% improvement with comparable CPU footprint. From Qdrant's perspective, both produce sparse vectors — same implementation surface area, just swap the tokenizer for a model at query time.
+
+### Chosen Model
+Candidate: `naver/splade-v3-distilbert` (67M params) — balances quality and CPU speed.
+Alternative: `opensearch-neural-sparse-encoding-v2-distill` (slightly better BEIR score).
+
+Final decision pending benchmark against our photo-caption corpus.
 
 ### Tasks
-- [ ] Enable Qdrant sparse vectors (native support)
-- [ ] Build a BM25 tokenizer for enriched captions
-- [ ] Index captions as sparse vectors in Qdrant
-- [ ] Update search to run dense + sparse in parallel
-- [ ] Fuse results with RRF (k=60) as baseline
-- [ ] Benchmark: dense-only vs sparse-only vs hybrid
+- [ ] Add sparse vector config to Qdrant collection schema
+- [ ] Create `SparseEncodingService` using chosen SPLADE model (lazy-loaded, thread-safe)
+- [ ] Index enriched captions as sparse vectors in Qdrant
+- [ ] Encode queries with SPLADE at search time
+- [ ] Update search to run 3-way RRF: image-dense + text-dense + SPLADE-sparse (k=60)
+- [ ] Benchmark: dense-only vs hybrid on test queries
+- [ ] Add unit tests for sparse encoding service
+
+### Cost Analysis
+- **Index-time**: SPLADE encodes each caption once (~ms per caption on CPU, batchable)
+- **Query-time**: ~ms per query, negligible overhead
+- **Storage**: Sparse vectors are tiny (non-zero indices + weights per token)
 
 ### Expected outcome
-Exact keyword matches ("england", "2012", "tower bridge") rank highly even when the dense model misses them.
+Exact keyword matches ("england", "tower bridge") rank highly even when dense models undershoot, while SPLADE's learned expansions catch semantically related terms BM25 would miss.
 
 ---
 
@@ -136,8 +156,28 @@ More consistent, measurable improvements in search quality.
 | ✅ Done | Phase 1: Better Text Embeddings | BGE replaced CLIP-text. 13/13 tests passing. |
 | ✅ Done | Phase 2: Query Understanding | Regex parser + payload filters. No NER needed. |
 | ✅ Done | Phase 4: Caption Enrichment | Qwen2.5-VL-3B VLM service + batch management command. Ready for production use. |
-| 🟢 P2 | Phase 3: Hybrid Search | Deferred — more valuable after VLM enrichment. |
+| 🟢 P2 | Phase 3: Hybrid Search (SPLADE) | Learned sparse vectors beat BM25 by ~13%. Low risk, additive to existing pipeline. |
 | ⚪ P3 | Phase 5: Reranking | Incremental polish after foundation is solid. |
+
+---
+
+## Market Research Notes (June 2026)
+
+Assessment of current landscape vs. our architecture choices.
+
+### Confirmed Good Choices
+- **Dual-vector dense search (CLIP image + BGE text)** — still industry standard for multimodal retrieval
+- **BGE-large-en-v1.5** — remains top-tier for CPU deployment on MTEB leaderboards
+- **Qdrant for self-hosted** — leads in developer ergonomics; sparse vector support matured ahead of competitors
+- **RRF fusion** — still the standard method for merging ranked results
+- **VLM caption enrichment** — confirmed highest-leverage investment before adding lexical components
+
+### Emerging Alternatives Worth Watching
+- **Unified multimodal embeddings** — Jina v5-omni (May 2026) and Qwen3-VL-Embedding-2B can embed text, images, audio, video into one shared space. Could eventually consolidate our separate CLIP + BGE pipeline, but dual-vector specialization currently gives better control over ranking.
+- **Milvus 3.0-beta** — added first-class full-text search and hybrid capabilities. Competitively featured, but no compelling reason to migrate from Qdrant given our invested structure.
+
+### Key Insight (Updated)
+**SPLADE bridges the gap between dense semantics and exact keywords.** Dense vectors catch meaning ("sunset" ↔ "golden hour"), SPLADE catches tokens plus learned expansions ("Tower Bridge" → exact match + "London landmark"). Together with VLM captions providing rich text surface area, this covers the full spectrum without needing a reranker.
 
 ---
 

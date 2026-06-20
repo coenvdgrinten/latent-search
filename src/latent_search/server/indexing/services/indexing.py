@@ -11,6 +11,9 @@ from latent_search.server.indexing.services.clip import CLIPService
 from latent_search.server.indexing.services.discovery import DiscoveryService
 from latent_search.server.indexing.services.exif import ExifService
 from latent_search.server.indexing.services.geocoding import GeocodingService
+from latent_search.server.indexing.services.sparse_encoding import (
+    SparseEncodingService,
+)
 from latent_search.server.indexing.services.text_embedding import (
     TextEmbeddingService,
 )
@@ -25,6 +28,7 @@ class IndexingService:
         self.discovery = DiscoveryService()
         self.clip = CLIPService()
         self.text_embedding = TextEmbeddingService()
+        self.sparse_encoding = SparseEncodingService()
         self.vector_db = VectorDBService()
         self.exif = ExifService()
         self.geocoding = GeocodingService()
@@ -89,6 +93,10 @@ class IndexingService:
                 )
                 text_embedding = self.text_embedding.encode(text_caption)
 
+                # Optional sparse encoding — skips gracefully if collection
+                # doesn't support sparse vectors yet.
+                sparse_embedding = self.sparse_encoding.encode_document(text_caption)
+
                 # Assign vector_id at indexing time if not set
                 if not media.vector_id:
                     media.vector_id = uuid.uuid4()
@@ -109,6 +117,7 @@ class IndexingService:
                     image_embedding=image_embedding,
                     text_embedding=text_embedding,
                     payload={"caption": text_caption, **payload},
+                    sparse_embedding=sparse_embedding,
                 )
 
                 with transaction.atomic():

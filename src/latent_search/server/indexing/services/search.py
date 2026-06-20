@@ -10,15 +10,22 @@ from qdrant_client.models import (
     Filter,
     MatchText,
     Prefetch,
+    Rrf,
+    RrfQuery,
+    SparseVector,
 )
 
 from latent_search.server.indexing.services.query_parser import (
     ParsedQuery,
     parse_query,
 )
+from latent_search.server.indexing.services.sparse_encoding import (
+    SparseEncodingService,
+)
 from latent_search.server.indexing.services.text_embedding import (
     TextEmbeddingService,
 )
+from latent_search.server.indexing.services.vector_db import SPARSE_VECTOR_NAME
 
 
 class QdrantUnavailableError(Exception):
@@ -28,6 +35,7 @@ class QdrantUnavailableError(Exception):
 class SearchService:
     def __init__(self) -> None:
         self.text_embedding = TextEmbeddingService()
+        self.sparse_encoding = SparseEncodingService()
         self.qdrant_client = QdrantClient(
             url=settings.QDRANT_URL,
             api_key=settings.QDRANT_API_KEY,
@@ -169,13 +177,27 @@ class SearchService:
             ),
         }
 
+    def _has_sparse_support(self) -> bool:
+        """Check whether the current collection supports sparse vectors."""
+        try:
+            info = self.qdrant_client.get_collection(
+                collection_name=self.collection_name
+            )
+            return SPARSE_VECTOR_NAME in (info.config.params.sparse_vectors or {})
+        except (ResponseHandlingException, ConnectError):
+            return False
+
     def semantic_search(self, query: str, limit: int = 24) -> list[dict]:
         """
-        Dual-vector RRF search: image vector for visual matches, text
-        vector for semantic caption matches, fused by Qdrant prefetch.
+        Triple-vector RRF search: image vector for visual matches, text
+        vector for semantic caption matches, sparse vector for lexical
+        keyword matches — all fused by Qdrant prefetch + RRF.
 
         Applies payload filters derived from structured entities
         (dates, seasons, locations) extracted by the query parser.
+
+        Gracefully degrades to dual-vector search if the collection
+        doesn't support sparse vectors yet.
         """
         parsed = parse_query(query)
         query_embedding = self.text_embedding.encode(query)
@@ -183,20 +205,45 @@ class SearchService:
         payload_filter = self._build_payload_filter(parsed)
 
         try:
-            search_results = self.qdrant_client.query_points(
-                collection_name=self.collection_name,
-                prefetch=[
+            # Check if collection supports sparse vectors
+            has_sparse = self._has_sparse_support()
+
+            prefetch_list: list[
+                Prefetch
+            ] = [
+                Prefetch(
+                    query=query_embedding,
+                    using="image",
+                    limit=limit,
+                    filter=payload_filter,
+                ),
+                Prefetch(
+                    query=query_embedding,
+                    using="text",
+                    limit=limit,
+                    filter=payload_filter,
+                ),
+            ]
+            if has_sparse:
+                sparse_result = self.sparse_encoding.encode_document(query)
+                sparse_vector = SparseVector(
+                    indices=sparse_result["indices"],  # ty: ignore
+                    values=sparse_result["values"],  # ty: ignore
+                )
+                prefetch_list.append(
                     Prefetch(
-                        query=query_embedding,
-                        using="image",
+                        query=sparse_vector,
+                        using=SPARSE_VECTOR_NAME,
                         limit=limit,
                         filter=payload_filter,
-                    ),
-                ],
-                query=query_embedding,
-                using="text",
+                    )
+                )
+
+            search_results = self.qdrant_client.query_points(
+                collection_name=self.collection_name,
+                prefetch=prefetch_list,
+                query=RrfQuery(rrf=Rrf(k=60)),
                 limit=limit,
-                query_filter=payload_filter,
             ).points
         except (ResponseHandlingException, ConnectError) as exc:
             raise QdrantUnavailableError(

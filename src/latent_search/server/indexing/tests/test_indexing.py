@@ -15,6 +15,9 @@ _TEXT_EMBED_PATCH = (
 _VDB_PATCH = "latent_search.server.indexing.services.indexing.VectorDBService"
 _DISCOVERY_PATCH = "latent_search.server.indexing.services.indexing.DiscoveryService"
 _GEO_PATCH = "latent_search.server.indexing.services.indexing.GeocodingService"
+_SPARSE_PATCH = (
+    "latent_search.server.indexing.services.indexing.SparseEncodingService"
+)
 
 
 class IndexingServiceTest(TestCase):
@@ -34,6 +37,7 @@ class IndexingServiceTest(TestCase):
         self.assertEqual(IndexedMedia.objects.count(), 2)
 
     @patch(_DISCOVERY_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -44,15 +48,21 @@ class IndexingServiceTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_discovery_class,
     ):
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         mock_vector_db = mock_vdb_class.return_value
 
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/test.jpg",
@@ -114,6 +124,7 @@ class IndexingServiceTest(TestCase):
         self.assertFalse(media.is_indexed)
 
     @patch(_DISCOVERY_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -124,13 +135,19 @@ class IndexingServiceTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_discovery_class,
     ):
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/no_id.jpg",
@@ -148,6 +165,7 @@ class IndexingServiceTest(TestCase):
         self.assertIsNotNone(media.vector_id)
 
     @patch(_DISCOVERY_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -158,14 +176,20 @@ class IndexingServiceTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_discovery_class,
     ):
         """Caption should include reverse-geocoded location and temporal context."""
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
         mock_geo = mock_geo_class.return_value
         mock_geo.reverse_geocode.return_value = "London, England, United Kingdom"
 
@@ -191,6 +215,7 @@ class IndexingServiceTest(TestCase):
         self.assertIn("summer", caption)
 
     @patch(_DISCOVERY_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -201,14 +226,20 @@ class IndexingServiceTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_discovery_class,
     ):
         """Missing GPS should not break caption generation."""
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/beach-day.jpg",

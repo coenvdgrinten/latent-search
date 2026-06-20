@@ -12,17 +12,25 @@ class SearchServiceTest(TestCase):
         text_emb_patcher = patch(
             "latent_search.server.indexing.services.search.TextEmbeddingService"
         )
+        sparse_patcher = patch(
+            "latent_search.server.indexing.services.search.SparseEncodingService"
+        )
         qdrant_patcher = patch(
             "latent_search.server.indexing.services.search.QdrantClient"
         )
         self.mock_text_emb_class = text_emb_patcher.start()
+        self.mock_sparse_class = sparse_patcher.start()
         self.mock_qdrant_class = qdrant_patcher.start()
         self.addCleanup(text_emb_patcher.stop)
+        self.addCleanup(sparse_patcher.stop)
         self.addCleanup(qdrant_patcher.stop)
 
         self.mock_text_emb = self.mock_text_emb_class.return_value
+        self.mock_sparse = self.mock_sparse_class.return_value
         self.mock_client = self.mock_qdrant_class.return_value
         self.mock_text_emb.encode.return_value = [0.1] * 1024
+        # Disable sparse support in tests — collection has no sparse config.
+        self.mock_client.get_collection.return_value.config.params.sparse_vectors = {}
 
         self.service = SearchService()
 
@@ -50,19 +58,25 @@ class SearchServiceTest(TestCase):
         self.assertEqual(results[0]["file_name"], "photo.jpg")
 
     def test_semantic_search_passes_query_embedding_to_qdrant(self):
-        """The text embedding for the query should be forwarded to Qdrant."""
+        """Query embedding should reach Qdrant via prefetch + RRF."""
         self._mock_query_points([])
 
         self.service.semantic_search("sunset over the ocean", limit=10)
 
         self.mock_text_emb.encode.assert_called_once_with("sunset over the ocean")
         search_kwargs = self.mock_client.query_points.call_args.kwargs
-        self.assertEqual(search_kwargs["query"], [0.1] * 1024)
-        self.assertEqual(search_kwargs["using"], "text")
+        # Query is now an RRF fusion object (dual-vector when sparse unsupported).
+        from qdrant_client.models import Rrf, RrfQuery
+
+        self.assertIsInstance(search_kwargs["query"], RrfQuery)
+        self.assertIsInstance(search_kwargs["query"].rrf, Rrf)
         self.assertEqual(search_kwargs["limit"], 10)
         self.assertIn("prefetch", search_kwargs)
-        self.assertEqual(len(search_kwargs["prefetch"]), 1)
-        self.assertEqual(search_kwargs["prefetch"][0].using, "image")
+        # Two prefetches: image-vector and text-vector.
+        self.assertEqual(len(search_kwargs["prefetch"]), 2)
+        usings = [p.using for p in search_kwargs["prefetch"]]
+        self.assertIn("image", usings)
+        self.assertIn("text", usings)
 
     def test_semantic_search_returns_empty_list_when_no_results(self):
         """Should return an empty list when Qdrant returns no hits."""

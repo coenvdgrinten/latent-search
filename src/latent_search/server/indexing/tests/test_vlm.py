@@ -17,12 +17,16 @@ _VDB_PATCH = "latent_search.server.indexing.services.indexing.VectorDBService"
 _DISCOVERY_PATCH = "latent_search.server.indexing.services.indexing.DiscoveryService"
 _GEO_PATCH = "latent_search.server.indexing.services.indexing.GeocodingService"
 _VLM_PATCH = "latent_search.server.indexing.services.indexing.VLMService"
+_SPARSE_PATCH = (
+    "latent_search.server.indexing.services.indexing.SparseEncodingService"
+)
 
 
 class IndexingServiceVLMTest(TestCase):
     """Test VLM caption integration in the indexing pipeline."""
 
     @patch(_VLM_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -35,16 +39,22 @@ class IndexingServiceVLMTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_vlm_class,
     ):  # noqa: E501
         """When a media has a vlm_caption, it should be prepended."""
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         _ = mock_vdb_class  # Used by decorator
 
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/test.jpg",
@@ -69,6 +79,7 @@ class IndexingServiceVLMTest(TestCase):
         self.assertIn("ocean", media.caption)
 
     @patch(_VLM_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -81,16 +92,22 @@ class IndexingServiceVLMTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_vlm_class,
     ):  # noqa: E501
         """When no vlm_caption exists, indexing should work normally."""
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         _ = mock_vdb_class  # Used by decorator
 
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/beach_photo.jpg",
@@ -110,6 +127,7 @@ class IndexingServiceVLMTest(TestCase):
         self.assertNotIn("A beautiful", media.caption)
 
     @patch(_VLM_PATCH)
+    @patch(_SPARSE_PATCH)
     @patch(_TEXT_EMBED_PATCH)
     @patch(_CLIP_PATCH)
     @patch(_VDB_PATCH)
@@ -122,18 +140,24 @@ class IndexingServiceVLMTest(TestCase):
         mock_vdb_class,
         mock_clip_class,
         mock_text_embed_class,
+        mock_sparse_class,
         mock_vlm_class,
     ):  # noqa: E501
         """VLM caption should come first, followed by factual data."""
         service = IndexingService()
         mock_clip = mock_clip_class.return_value
         mock_text_embed = mock_text_embed_class.return_value
+        mock_sparse = mock_sparse_class.return_value
         _ = mock_vdb_class  # Used by decorator
         mock_geo = mock_geo_class.return_value
         mock_geo.reverse_geocode.return_value = "Paris, France"
 
         mock_clip.get_image_embedding.return_value = [0.0] * 1024
         mock_text_embed.encode.return_value = [0.0] * 1024
+        mock_sparse.encode_document.return_value = {
+            "indices": [1, 5, 10],
+            "values": [0.8, 0.6, 0.4],
+        }
 
         media = IndexedMedia.objects.create(
             file_path="/tmp/eiffel_tower.jpg",
