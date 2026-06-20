@@ -52,6 +52,22 @@ class TensorConversionTest(TestCase):
         assert isinstance(result["indices"], list)
         assert isinstance(result["values"], list)
 
+    def test_handles_sparse_coo_tensor(self):
+        """SPLADE returns COO-encoded sparse tensors — must handle gracefully."""
+        # Create a sparse tensor matching SPLADE output shape (vocab size ~30k+)
+        vocab_size = 100
+        indices = torch.tensor([[2, 15, 42]])
+        values = torch.tensor([0.8, 0.6, 0.3])
+        sparse_tensor = torch.sparse_coo_tensor(
+            indices, values, (vocab_size,), dtype=torch.float32
+        )
+        result = _tensor_to_qdrant_sparse(sparse_tensor)
+
+        self.assertEqual(result["indices"], [2, 15, 42])
+        self.assertAlmostEqual(result["values"][0], 0.8)
+        self.assertAlmostEqual(result["values"][1], 0.6)
+        self.assertAlmostEqual(result["values"][2], 0.3)
+
 
 class SparseEncodingServiceInitTest(TestCase):
     """Tests for SparseEncodingService initialization."""

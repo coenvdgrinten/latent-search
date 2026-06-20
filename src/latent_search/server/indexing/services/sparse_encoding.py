@@ -80,16 +80,29 @@ class SparseEncodingService:
 def _tensor_to_qdrant_sparse(
     tensor: torch.Tensor,
 ) -> dict[str, list[int] | list[float]]:
-    """Convert a 1-D tensor of token scores to Qdrant sparse vector format."""
+    """Convert a 1-D tensor of token scores to Qdrant sparse vector format.
+
+    Handles both dense and sparse (CSR/COO) inputs. SPLADE models return
+    COO-encoded sparse tensors; extracting indices + values directly avoids
+    densification which would allocate a huge vocab-sized array.
+    """
     # Handle batch output (2D) — take first row
     if tensor.ndim == 2:
         tensor = tensor.squeeze(0)
 
-    nonzero_mask = tensor != 0
-    indices = torch.nonzero(nonzero_mask, as_tuple=False).squeeze(-1)
-    values = tensor[nonzero_mask]
+    # If already a sparse tensor, extract coords/values directly.
+    if tensor.is_sparse:
+        coo = tensor.coalesce().to_sparse()
+        indices = coo.indices()[0].cpu().tolist()
+        values = coo.values().cpu().tolist()
+    else:
+        nonzero_mask = tensor != 0
+        indices = torch.nonzero(nonzero_mask, as_tuple=False).squeeze(-1)
+        values = tensor[nonzero_mask]
+        indices = indices.cpu().tolist()
+        values = values.cpu().tolist()
 
     return {
-        "indices": indices.cpu().tolist(),
-        "values": values.cpu().tolist(),
+        "indices": indices,
+        "values": values,
     }
