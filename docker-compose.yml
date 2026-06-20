@@ -24,10 +24,11 @@ services:
       SECRET_KEY: ${SECRET_KEY:?Set a SECRET_KEY in your .env file}
       DEBUG: "False"
       ALLOWED_HOSTS: "*"
-      QDRANT_URL: http://qdrant:6333
       QDRANT_API_KEY: "${QDRANT_API_KEY:-change-me}"
       HF_HOME: /cache/huggingface
       PYTORCH_DISABLE_AVX512_BF16_MATMUL: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./data:/app/data                           # SQLite DB (persisted)
       - /mnt/user/nextcloud:/nc_data:r              # Nextcloud data dir (read-only)
