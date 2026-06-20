@@ -10,5 +10,6 @@ urlpatterns = [
     path("", include("latent_search.server.indexing.urls", namespace="indexing")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve static + media files (needed behind Gunicorn where DEBUG=False)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

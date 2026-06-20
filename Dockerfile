@@ -49,6 +49,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:8000/admin/login/ || exit 1
 
 CMD ["sh", "-c", "python manage.py migrate --noinput && \
+    python manage.py collectstatic --noinput && \
     exec gunicorn latent_search.server.config.wsgi:application \
         --chdir /app/src \
         --bind 0.0.0.0:8000 \
