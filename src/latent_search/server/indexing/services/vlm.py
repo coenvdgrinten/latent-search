@@ -172,7 +172,7 @@ class VLMService:
         """
         captions = []
         for i, path in enumerate(image_paths):
-            logger.debug(f"Processing image {i+1}/{len(image_paths)}: {path}")
+            logger.debug(f"Processing image {i + 1}/{len(image_paths)}: {path}")
             try:
                 caption = self.describe(path, max_tokens)
                 captions.append(caption)

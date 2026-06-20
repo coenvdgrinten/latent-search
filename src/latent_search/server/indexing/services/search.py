@@ -208,9 +208,7 @@ class SearchService:
             # Check if collection supports sparse vectors
             has_sparse = self._has_sparse_support()
 
-            prefetch_list: list[
-                Prefetch
-            ] = [
+            prefetch_list: list[Prefetch] = [
                 Prefetch(
                     query=query_embedding,
                     using="image",

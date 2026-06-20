@@ -11,9 +11,7 @@ from latent_search.server.indexing.services.sparse_encoding import (
     _tensor_to_qdrant_sparse,
 )
 
-_MODEL_PATCH = (
-    "latent_search.server.indexing.services.sparse_encoding.SparseEncoder"
-)
+_MODEL_PATCH = "latent_search.server.indexing.services.sparse_encoding.SparseEncoder"
 
 
 class DefaultModelIdTest(TestCase):
@@ -127,9 +125,7 @@ class SparseEncodingServiceBatchEncodeTest(TestCase):
     def test_batch_encodes_multiple_texts(self, mock_sp_class):
         service = SparseEncodingService()
         mock_model = MagicMock()
-        mock_model.encode_document.return_value = torch.tensor(
-            [[0.1, 0.0], [0.0, 0.2]]
-        )
+        mock_model.encode_document.return_value = torch.tensor([[0.1, 0.0], [0.0, 0.2]])
         mock_sp_class.return_value = mock_model
 
         results = service.batch_encode_documents(["doc one", "doc two"])

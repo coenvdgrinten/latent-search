@@ -146,8 +146,8 @@ class Command(BaseCommand):
                 # Progress indicator
                 pct = ((i + 1) / total) * 100
                 self.stdout.write(
-                    f"\r[{pct:5.1f}%] Processing {i+1}/{total} "
-                    f"({eta_remaining/60:.1f}m remaining) ",
+                    f"\r[{pct:5.1f}%] Processing {i + 1}/{total} "
+                    f"({eta_remaining / 60:.1f}m remaining) ",
                     ending="",
                 )
 
@@ -190,7 +190,7 @@ class Command(BaseCommand):
             self._save_state(state)
             self.stdout.write(
                 self.style.WARNING(
-                    f"Paused at {processed_count}/{total}. " "Run again to resume."
+                    f"Paused at {processed_count}/{total}. Run again to resume."
                 )
             )
             return
@@ -206,9 +206,9 @@ class Command(BaseCommand):
         self.stdout.write("=" * 60)
         self.stdout.write(f"Processed: {processed_count} images")
         self.stdout.write(f"Errors: {error_count} images")
-        self.stdout.write(f"Time: {elapsed_total/60:.1f} minutes")
+        self.stdout.write(f"Time: {elapsed_total / 60:.1f} minutes")
         if processed_count > 0:
-            self.stdout.write(f"Avg: {elapsed_total/processed_count:.1f}s per image")
+            self.stdout.write(f"Avg: {elapsed_total / processed_count:.1f}s per image")
         self.stdout.write("=" * 60)
 
         # Prompt for re-indexing

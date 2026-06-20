@@ -48,9 +48,7 @@ class SparseEncodingService:
             self._model = SparseEncoder(self.model_id, device=self.device)
         return self._model
 
-    def encode_document(
-        self, text: str
-    ) -> dict[str, list[int] | list[float]]:
+    def encode_document(self, text: str) -> dict[str, list[int] | list[float]]:
         """
         Encode a single document/caption into a Qdrant-compatible sparse vector.
 

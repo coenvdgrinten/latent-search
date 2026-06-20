@@ -83,9 +83,7 @@ class VectorDBService:
         _validate_vector(image_embedding, "Image")
         _validate_vector(text_embedding, "Text")
 
-        vectors: dict[
-            str, list[float] | SparseVector
-        ] = {  # noqa: SIM908
+        vectors: dict[str, list[float] | SparseVector] = {  # noqa: SIM908
             "image": image_embedding,
             "text": text_embedding,
         }

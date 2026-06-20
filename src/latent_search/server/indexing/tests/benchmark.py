@@ -43,18 +43,15 @@ TEST_CORPUS: list[tuple[str, str, str]] = [
     ("munich", "germany", "location"),
     ("dingle", "irland", "location"),  # filename is irland-dingle.jpg
     ("garda lake", "italy", "location"),
-
     # --- Year queries --------------------------------------------------
     ("pictures from 2012", "irland", "year"),  # only image from 2012
-    ("photos from 2016", "japan", "year"),     # only image from 2016
+    ("photos from 2016", "japan", "year"),  # only image from 2016
     ("what happened in 2012", "irland", "year"),
-
     # --- Combined date + location --------------------------------------
     ("photos from england in 2018", "england", "combined"),
     ("trip to italy in 2018", "italy", "combined"),
     ("japan 2016", "japan", "combined"),
     ("ireland 2012", "irland", "combined"),  # filename uses Irish spelling
-
     # --- Season queries ------------------------------------------------
     ("summer photos", "england", "season"),  # only Aug image
 ]
@@ -100,13 +97,9 @@ class BenchmarkCollector:
 
     # ---- Analysis -----------------------------------------------------
 
-    def _hits_for_category(
-        self, category: str
-    ) -> list[tuple[str, str, list[str]]]:
+    def _hits_for_category(self, category: str) -> list[tuple[str, str, list[str]]]:
         return [
-            (q, exp, ranks)
-            for q, exp, cat, ranks in self.results
-            if cat == category
+            (q, exp, ranks) for q, exp, cat, ranks in self.results if cat == category
         ]
 
     def categories(self) -> list[str]:
@@ -125,9 +118,7 @@ class BenchmarkCollector:
         hits = sum(1 for q, exp, ranks in items if any(exp in r for r in ranks[:k]))
         return hits / len(items)
 
-    def missed_queries(
-        self, k: int = 1
-    ) -> list[tuple[str, str, str, list[str]]]:
+    def missed_queries(self, k: int = 1) -> list[tuple[str, str, str, list[str]]]:
         """Return (query, expected, got_first, ranks) for failures at top-K."""
         missed: list[tuple[str, str, str, list[str]]] = []
         for query, expected, _category, ranks in self.results:

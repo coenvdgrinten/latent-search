@@ -17,9 +17,7 @@ _VDB_PATCH = "latent_search.server.indexing.services.indexing.VectorDBService"
 _DISCOVERY_PATCH = "latent_search.server.indexing.services.indexing.DiscoveryService"
 _GEO_PATCH = "latent_search.server.indexing.services.indexing.GeocodingService"
 _VLM_PATCH = "latent_search.server.indexing.services.indexing.VLMService"
-_SPARSE_PATCH = (
-    "latent_search.server.indexing.services.indexing.SparseEncodingService"
-)
+_SPARSE_PATCH = "latent_search.server.indexing.services.indexing.SparseEncodingService"
 
 
 class IndexingServiceVLMTest(TestCase):
