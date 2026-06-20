@@ -44,7 +44,15 @@ class VectorDBService:
         Ensure the Qdrant collection exists with named 'image', 'text',
         and 'sparse' vectors.
         """
-        collections = self.client.get_collections().collections
+        # Verify connectivity first
+        self.client.get_collections()
+        collections = None
+        try:
+            collections = self.client.get_collections().collections
+        except Exception as e:
+            raise RuntimeError(
+                f"Cannot reach Qdrant at {settings.QDRANT_URL}: {e}"
+            ) from e
         exists = any(c.name == self.collection_name for c in collections)
 
         if not exists:
