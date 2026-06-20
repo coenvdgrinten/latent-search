@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual env
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Local data (mounted as volumes)
+db.sqlite3
+media/
+.env
+*.sqlite
+
+# HuggingFace cache (host-mounted)
+.hf_cache/
+
+# Test fixtures
+tests/fixtures/

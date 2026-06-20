@@ -36,9 +36,11 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = (
+    os.getenv("ALLOWED_HOSTS", "*").split(",") if os.getenv("ALLOWED_HOSTS") else ["*"]
+)
 
 
 # Application definition
@@ -89,7 +91,10 @@ WSGI_APPLICATION = "latent_search.server.config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR.parent.parent.parent / "db.sqlite3",
+        "NAME": (
+            Path(os.getenv("LATENT_SEARCH_DATA", BASE_DIR.parent.parent.parent))
+            / "db.sqlite3"
+        ),
     }
 }
 

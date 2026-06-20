@@ -1,0 +1,40 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # GRPC
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__API_KEY: "${QDRANT_API_KEY:-change-me}"
+
+  latentsearch:
+    build: .
+    container_name: latentsearch
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      SECRET_KEY: ${SECRET_KEY:?Set a SECRET_KEY in your .env file}
+      DEBUG: "False"
+      ALLOWED_HOSTS: "*"
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: "${QDRANT_API_KEY:-change-me}"
+      HF_HOME: /cache/huggingface
+      PYTORCH_DISABLE_AVX512_BF16_MATMUL: "1"
+    volumes:
+      - ./data:/app/data                           # SQLite DB (persisted)
+      - /mnt/user/nextcloud:/nc_data:r              # Nextcloud data dir (read-only)
+                                                     # Index with: index_media /nc_data/<username>/files/Photos
+      - hf_cache:/cache/huggingface                 # Shared model cache (~12GB)
+    tmpfs:
+      - /tmp:noexec,nosuid,size=512m      # Room for large model loads
+
+volumes:
+  hf_cache:
