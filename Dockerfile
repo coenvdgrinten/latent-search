@@ -26,7 +26,8 @@ FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTORCH_DISABLE_AVX512_BF16_MATMUL=1
+    PYTORCH_DISABLE_AVX512_BF16_MATMUL=1 \
+    PYTHONPATH=/app/src:/app
 
 # Minimal runtime system libs
 RUN apt-get update && \
