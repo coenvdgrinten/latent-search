@@ -21,6 +21,7 @@ dependencies = [
     "sentence-transformers>=5.5.1",
     "accelerate>=1.13.0",
     "gunicorn>=23.0.0",
+    "whitenoise>=6.7.0",
 ]
 
 [build-system]
