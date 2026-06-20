@@ -12,7 +12,7 @@ COPY pyproject.toml ./
 # Extract dependency specs from pyproject.toml → requirements.txt
 RUN python -c "\
 import tomllib; \
-specs = tomllib.open('pyproject.toml')['project']['dependencies']; \
+specs = tomllib.load(open('pyproject.toml', 'rb'))['project']['dependencies']; \
 print('\n'.join(specs))" > requirements.txt
 
 # Install with CPU-only PyTorch (avoids pulling 2 GB CUDA wheels)
