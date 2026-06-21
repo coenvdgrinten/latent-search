@@ -1,5 +1,8 @@
-from django.http import HttpRequest, HttpResponse, JsonResponse
+import base64
+
+from django.http import FileResponse, HttpRequest, Http404, HttpResponse, JsonResponse
 from django.shortcuts import render
+from pathlib import Path
 
 from latent_search.server.indexing.apps import _model_ready_event
 from latent_search.server.indexing.services.search import (
@@ -47,3 +50,21 @@ def search_dashboard(request: HttpRequest) -> HttpResponse:
 def model_ready_check(_request: HttpRequest) -> JsonResponse:
     """Returns JSON indicating whether the embedding model is warmed up."""
     return JsonResponse({"ready": _model_ready_event.is_set()})
+
+
+def serve_image(request: HttpRequest, b64_path: str) -> HttpResponse:
+    """Serve an image from an arbitrary filesystem path.
+
+    ``b64_path`` is a base64-encoded absolute path, avoiding URL-escaping issues
+    with slashes or special characters (e.g. apostrophes in folder names).
+    """
+    try:
+        decoded = base64.b64decode(b64_path).decode()
+    except Exception:
+        raise Http404("Invalid path encoding")
+
+    filepath = Path(decoded)
+    if not filepath.exists():
+        raise Http404(f"Image not found: {decoded}")
+
+    return FileResponse(filepath.open("rb"), content_type="image/jpeg")
