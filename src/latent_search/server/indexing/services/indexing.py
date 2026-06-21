@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 from django.db import transaction
+from tqdm import tqdm
 
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.clip import CLIPService
@@ -34,13 +35,23 @@ class IndexingService:
         self.geocoding = GeocodingService()
         self.vlm = VLMService()
 
-    def run_discovery(self, root_path: str | Path):
+    def run_discovery(self, root_path: str | Path) -> int:
         """
         Walk the filesystem and populate the database with new media records.
+        Returns the number of files discovered.
         """
         root = Path(root_path).absolute()
-        for path in self.discovery.discover_media(root):
+        media_paths = self.discovery.discover_media(root)
+
+        discovered = 0
+        for path in tqdm(media_paths, desc="Discovering", unit="files"):
             abs_path = str(path.absolute())
+
+            # Skip if already tracked
+            if IndexedMedia.objects.filter(file_path=abs_path).exists():
+                continue
+
+            discovered += 1
 
             # Basic stats for initial record
             try:
@@ -58,32 +69,36 @@ class IndexingService:
             mime_type, _ = mimetypes.guess_type(path.name)
             meta = self.exif.read_metadata(path)
 
-            # Using get_or_create to avoid duplicates by path
-            IndexedMedia.objects.get_or_create(
+            IndexedMedia.objects.create(
                 file_path=abs_path,
-                defaults={
-                    "filename": path.name,
-                    "relative_path": rel_path,
-                    "file_size": file_size,
-                    "mime_type": mime_type or "",
-                    "taken_at": meta.taken_at,
-                    "width": meta.width,
-                    "height": meta.height,
-                    "latitude": meta.latitude,
-                    "longitude": meta.longitude,
-                    "is_indexed": False,
-                },
+                filename=path.name,
+                relative_path=rel_path,
+                file_size=file_size,
+                mime_type=mime_type or "",
+                taken_at=meta.taken_at,
+                width=meta.width,
+                height=meta.height,
+                latitude=meta.latitude,
+                longitude=meta.longitude,
+                is_indexed=False,
             )
 
-    def index_pending_media(self, batch_size: int = 100):
+        return discovered
+
+    def index_pending_media(self, batch_size: int = 10_000) -> tuple[int, int]:
         """
         Process media that hasn't been indexed yet.
+        Returns (indexed_count, error_count).
         """
         self.vector_db.ensure_collection()
 
-        pending = IndexedMedia.objects.filter(is_indexed=False)[:batch_size]
+        pending_qs = IndexedMedia.objects.filter(is_indexed=False)[:batch_size]
+        total = pending_qs.count()
 
-        for media in pending:
+        indexed = 0
+        errors = 0
+
+        for media in tqdm(list(pending_qs), desc="Indexing", unit="files", total=total):
             try:
                 logger.info(f"Indexing {media.file_path}")
                 image_embedding = self.clip.get_image_embedding(media.file_path)
@@ -125,9 +140,14 @@ class IndexingService:
                     media.caption = text_caption
                     media.save()
 
+                indexed += 1
+
             except Exception as e:
                 logger.error(f"Failed to index {media.file_path}: {e}")
+                errors += 1
                 continue
+
+        return (indexed, errors)
 
     @staticmethod
     def _build_temporal_context(media: IndexedMedia) -> str | None:

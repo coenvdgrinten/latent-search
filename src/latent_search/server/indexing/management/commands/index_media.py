@@ -2,6 +2,7 @@ from typing import override
 
 from django.core.management.base import BaseCommand, CommandParser
 
+from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.indexing import IndexingService
 
 
@@ -26,9 +27,20 @@ class Command(BaseCommand):
         service = IndexingService()
 
         self.stdout.write(f"Starting discovery in {path}...")
-        service.run_discovery(path)
+        discovered = service.run_discovery(path)
+        self.stdout.write(f"Discovered {discovered} new files.")
 
-        self.stdout.write("Starting indexing of pending items...")
-        service.index_pending_media(batch_size=batch_size)
+        pending_count = IndexedMedia.objects.filter(is_indexed=False).count()
+        self.stdout.write(
+            f"Starting indexing ({pending_count} pending, "
+            f"batch size {batch_size})..."
+        )
+        indexed, errors = service.index_pending_media(batch_size=batch_size)
 
-        self.stdout.write(self.style.SUCCESS("Finished indexing run."))
+        if errors:
+            self.stderr.write(f"  Errors: {errors}")
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Done. Indexed {indexed}/{pending_count} items."
+            )
+        )
