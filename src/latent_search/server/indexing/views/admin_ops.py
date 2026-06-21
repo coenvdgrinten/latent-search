@@ -6,6 +6,7 @@ import threading
 from typing import Any
 
 from django.http import HttpRequest, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from latent_search.server.indexing.models.media import IndexedMedia
 from latent_search.server.indexing.services.indexing import IndexingService
@@ -46,9 +47,11 @@ def _stats() -> dict[str, Any]:
     """Return high-level library statistics."""
     total = IndexedMedia.objects.count()
     indexed = IndexedMedia.objects.filter(is_indexed=True).count()
-    enriched = IndexedMedia.objects.exclude(vlm_caption="").filter(
-        vlm_caption__isnull=False
-    ).exclude(vlm_caption="")
+    enriched = (
+        IndexedMedia.objects.exclude(vlm_caption="")
+        .filter(vlm_caption__isnull=False)
+        .exclude(vlm_caption="")
+    )
     enriched_count = enriched.count()
     return {
         "total": total,
@@ -66,13 +69,16 @@ def _stats() -> dict[str, Any]:
 
 def get_stats(_request: HttpRequest) -> JsonResponse:
     """GET /api/stats – return library + job statuses."""
-    return JsonResponse({
-        "library": _stats(),
-        "jobs": job_manager.all_jobs(),
-        "media_root": job_manager.media_root,
-    })
+    return JsonResponse(
+        {
+            "library": _stats(),
+            "jobs": job_manager.all_jobs(),
+            "media_root": job_manager.media_root,
+        }
+    )
 
 
+@csrf_exempt
 def start_job(request: HttpRequest) -> JsonResponse:
     """POST /api/start_job?kind=indexing&root=/path/to/media
 
@@ -193,6 +199,7 @@ def start_job(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"status": "started", "kind": kind.value})
 
 
+@csrf_exempt
 def stop_job(request: HttpRequest) -> JsonResponse:
     """POST /api/stop_job?kind=indexing"""
     if request.method != "POST":
@@ -214,6 +221,7 @@ def stop_job(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"status": "stopping"})
 
 
+@csrf_exempt
 def save_settings(request: HttpRequest) -> JsonResponse:
     """POST /api/save_settings body: {"media_root": "/path"}"""
     if request.method != "POST":

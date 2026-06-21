@@ -84,6 +84,7 @@ class _EnrichmentJob(JobInfo):
 # Module-level singleton
 # ---------------------------------------------------------------------------
 
+
 class JobManager:
     """Central registry for all background indexing/enrichment jobs."""
 
