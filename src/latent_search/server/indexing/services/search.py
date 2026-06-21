@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from httpx import ConnectError
 from qdrant_client import QdrantClient

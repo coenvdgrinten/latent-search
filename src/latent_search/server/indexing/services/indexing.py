@@ -2,6 +2,7 @@ import logging
 import mimetypes
 import re
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 from django.db import transaction
@@ -35,15 +36,25 @@ class IndexingService:
         self.geocoding = GeocodingService()
         self.vlm = VLMService()
 
-    def run_discovery(self, root_path: str | Path) -> int:
+    def run_discovery(
+        self,
+        root_path: str | Path,
+        callback: Callable[[int, int, str], None] | None = None,
+    ) -> int:
         """
         Walk the filesystem and populate the database with new media records.
         Returns the number of files discovered.
+
+        Args:
+            root_path: Root directory to scan.
+            callback: Optional ``(current, total, message)`` hook called after
+                each file is processed (used by the UI for live progress).
         """
         root = Path(root_path).absolute()
         media_paths = self.discovery.discover_media(root)
 
         discovered = 0
+        total_files = len(media_paths)
         for path in tqdm(media_paths, desc="Discovering", unit="files"):
             abs_path = str(path.absolute())
 
@@ -80,13 +91,25 @@ class IndexingService:
             )
             if created:
                 discovered += 1
+            if callback:
+                msg = f"Scanning… {discovered}/{total_files}"
+                callback(discovered, total_files, msg)
 
         return discovered
 
-    def index_pending_media(self, batch_size: int = 10_000) -> tuple[int, int]:
+    def index_pending_media(
+        self,
+        batch_size: int = 10_000,
+        callback: Callable[[int, int, str], None] | None = None,
+    ) -> tuple[int, int]:
         """
         Process media that hasn't been indexed yet.
         Returns (indexed_count, error_count).
+
+        Args:
+            batch_size: Max items to process in one call.
+            callback: Optional ``(current, total, message)`` hook called after
+                each file is processed (used by the UI for live progress).
         """
         self.vector_db.ensure_collection()
 
@@ -139,6 +162,8 @@ class IndexingService:
                     media.save()
 
                 indexed += 1
+                if callback:
+                    callback(indexed, total, f"Indexing… {indexed}/{total}")
 
             except Exception as e:
                 logger.error(f"Failed to index {media.file_path}: {e}")

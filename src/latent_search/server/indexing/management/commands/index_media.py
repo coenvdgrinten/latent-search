@@ -40,7 +40,5 @@ class Command(BaseCommand):
         if errors:
             self.stderr.write(f"  Errors: {errors}")
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Done. Indexed {indexed}/{pending_count} items."
-            )
+            self.style.SUCCESS(f"Done. Indexed {indexed}/{pending_count} items.")
         )

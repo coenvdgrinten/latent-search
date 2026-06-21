@@ -76,7 +76,7 @@
         </div>
       {% endif %}
     {% else %}
-      <!-- Hero / Landing State -->
+      <!-- Hero / Landing State with Admin Panel -->
       <div class="hero-container" id="hero">
         <h1 class="hero-logo">Latent Search</h1>
         <p class="hero-subtitle">Semantic photo search powered by AI</p>
@@ -84,6 +84,56 @@
             <input class="search-input" type="text" name="q" placeholder="Search your photos…" autocomplete="off" autofocus>
             <button class="btn-primary" type="submit">Search</button>
         </form>
+
+        <!-- Stats + Admin Card -->
+        <div class="admin-panel" id="admin-panel">
+          <div class="admin-header">
+            <span class="admin-title">Library</span>
+            <button class="btn-admin-toggle" id="admin-toggle" aria-label="Toggle settings">⚙ Settings</button>
+          </div>
+
+          <!-- Statistics row -->
+          <div class="stats-row" id="stats-row">
+            <div class="stat-item">
+              <span class="stat-value" id="stat-total">—</span>
+              <span class="stat-label">Total files</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-indexed">—</span>
+              <span class="stat-label">Indexed</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-enriched">—</span>
+              <span class="stat-label">Captions</span>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="actions-row">
+            <button class="btn-action btn-discover" id="btn-discover" disabled>📁 Scan Library</button>
+            <button class="btn-action btn-index" id="btn-index" disabled>🧠 Index</button>
+            <button class="btn-action btn-enrich" id="btn-enrich" disabled>✨ Captions</button>
+          </div>
+
+          <!-- Progress area (collapsed initially) -->
+          <div class="progress-area collapsed" id="progress-area">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progress-bar"></div>
+            </div>
+            <div class="progress-message" id="progress-message">Idle</div>
+            <button class="btn-cancel" id="btn-cancel" style="display:none;">Cancel</button>
+          </div>
+
+          <!-- Expanded settings area (hidden by default) -->
+          <div class="settings-area collapsed" id="settings-area">
+            <label class="settings-label" for="media-root-input">Media root path</label>
+            <div class="settings-input-row">
+              <input class="settings-input" type="text" id="media-root-input" placeholder="/path/to/photos">
+              <button class="btn-small" id="btn-save-settings">Save</button>
+            </div>
+            <p class="settings-help">Path scanned for photos. Set this before clicking "Scan Library".</p>
+          </div>
+        </div>
       </div>
     {% endif %}
   </main>
@@ -427,6 +477,173 @@
       // Close on overlay background click
       overlay.addEventListener('click', function(e) {
         if (e.target === overlay) closeLightbox();
+      });
+    })();
+
+    // ── Admin Panel: Library Stats + Job Controls ──
+    (function() {
+      var hero = document.getElementById('hero');
+      if (!hero) return;
+
+      // Elements
+      var statTotal = document.getElementById('stat-total');
+      var statIndexed = document.getElementById('stat-indexed');
+      var statEnriched = document.getElementById('stat-enriched');
+      var btnDiscover = document.getElementById('btn-discover');
+      var btnIndex = document.getElementById('btn-index');
+      var btnEnrich = document.getElementById('btn-enrich');
+      var btnCancel = document.getElementById('btn-cancel');
+      var progressBar = document.getElementById('progress-bar');
+      var progressMessage = document.getElementById('progress-message');
+      var progressArea = document.getElementById('progress-area');
+      var adminToggle = document.getElementById('admin-toggle');
+      var settingsArea = document.getElementById('settings-area');
+      var mediaRootInput = document.getElementById('media-root-input');
+      var btnSaveSettings = document.getElementById('btn-save-settings');
+
+      var pollTimer = null;
+      var activeJob = null; // 'discovery' | 'indexing' | 'enrichment'
+
+      // ── Helpers ──
+      function fmt(n) {
+        return n == null ? '—' : String(n);
+      }
+
+      function setButtonsEnabled(enabled) {
+        btnDiscover.disabled = !enabled || !!activeJob;
+        btnIndex.disabled = !enabled || !!activeJob;
+        btnEnrich.disabled = !enabled || !!activeJob;
+      }
+
+      function showProgress(show) {
+        if (show) {
+          progressArea.classList.remove('collapsed');
+        } else {
+          progressArea.classList.add('collapsed');
+          progressBar.style.width = '0%';
+          progressMessage.textContent = 'Idle';
+          btnCancel.style.display = 'none';
+        }
+      }
+
+      // ── Poll stats + jobs from backend ──
+      function pollStats() {
+        fetch('/api/stats')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var lib = data.library;
+            statTotal.textContent = fmt(lib.total);
+            statIndexed.textContent = fmt(lib.indexed);
+            statEnriched.textContent = fmt(lib.enriched);
+
+            // Populate media root input if empty
+            if (mediaRootInput && !mediaRootInput.value && data.media_root) {
+              mediaRootInput.value = data.media_root;
+            }
+
+            // Check if buttons should be enabled (need a media root)
+            var hasRoot = !!(data.media_root && data.media_root.trim());
+            if (!activeJob) {
+              setButtonsEnabled(hasRoot);
+            }
+
+            // Update progress if a job is running
+            if (data.jobs) {
+              data.jobs.forEach(function(j) {
+                if (j.kind === activeJob) {
+                  var pct = j.total > 0 ? Math.round((j.progress / j.total) * 100) : 0;
+                  progressBar.style.width = pct + '%';
+                  progressMessage.textContent = j.message || '';
+
+                  if (j.status === 'done' || j.status === 'error' || j.status === 'idle') {
+                    // Job finished — stop polling loop
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                    activeJob = null;
+                    setButtonsEnabled(true);
+                    showProgress(false);
+                    // Refresh stats once more
+                    pollStats();
+                  }
+                }
+              });
+            }
+          })
+          .catch(function(err) {
+            console.warn('Stats poll failed:', err);
+          });
+      }
+
+      // Initial load + periodic refresh when idle
+      pollStats();
+      setInterval(function() {
+        if (!pollTimer) pollStats();
+      }, 5000);
+
+      // ── Start job ──
+      function startJob(kind) {
+        var rootParam = '';
+        if (kind === 'discovery' || kind === 'indexing') {
+          rootParam = '&root=' + encodeURIComponent(mediaRootInput?.value || '');
+        }
+        fetch('/api/start_job?kind=' + kind + rootParam, { method: 'POST' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.error) {
+              alert('Error: ' + data.error);
+              return;
+            }
+            activeJob = kind;
+            setButtonsEnabled(false);
+            showProgress(true);
+            btnCancel.style.display = ''; // ty: ignore[incompatible-types]
+            // Fast polling while job runs
+            pollStats();
+            pollTimer = setInterval(pollStats, 1000);
+          })
+          .catch(function(err) {
+            alert('Failed to start job: ' + err.message);
+          });
+      }
+
+      // ── Cancel job ──
+      function cancelJob() {
+        if (!activeJob) return;
+        fetch('/api/stop_job?kind=' + activeJob, { method: 'POST' })
+          .then(function(r) { return r.json(); })
+          .catch(function() {});
+      }
+
+      // ── Save settings ──
+      function saveSettings() {
+        var root = mediaRootInput?.value || '';
+        fetch('/api/save_settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({media_root: root})
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.error) {
+              alert('Error: ' + data.error);
+            } else {
+              pollStats();
+              settingsArea.classList.add('collapsed');
+            }
+          })
+          .catch(function(err) {
+            alert('Failed to save: ' + err.message);
+          });
+      }
+
+      // ── Event listeners ──
+      if (btnDiscover) btnDiscover.addEventListener('click', function() { startJob('discovery'); });
+      if (btnIndex) btnIndex.addEventListener('click', function() { startJob('indexing'); });
+      if (btnEnrich) btnEnrich.addEventListener('click', function() { startJob('enrichment'); });
+      if (btnCancel) btnCancel.addEventListener('click', cancelJob);
+      if (btnSaveSettings) btnSaveSettings.addEventListener('click', saveSettings);
+      if (adminToggle) adminToggle.addEventListener('click', function() {
+        settingsArea.classList.toggle('collapsed');
       });
     })();
   </script>
