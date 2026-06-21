@@ -145,7 +145,7 @@ WHITENOISE_USE_FINDERS = True
 # Media files
 # https://docs.djangoproject.com/en/6.0/topics/files/
 
-MEDIA_ROOT = BASE_DIR.parent.parent.parent / "media"
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", BASE_DIR.parent.parent.parent / "media"))
 MEDIA_URL = "/media/"
 
 # Qdrant Settings

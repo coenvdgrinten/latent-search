@@ -36,9 +36,11 @@ The entire user experience is served via a blazing-fast, server-rendered Django 
 ### Prerequisites
 
 - **Python 3.13+** (Managed by `uv` recommended)
-- **Qdrant:** Running instance of Qdrant vector database.
+- **Qdrant:** Running instance of Qdrant vector database ([Docker](https://qdrant.tech/documentation/quickstart/) recommended).
 
 ### Installation
+
+#### Native (via uv)
 
 1. **Clone the repository:**
    ```bash
@@ -51,13 +53,61 @@ The entire user experience is served via a blazing-fast, server-rendered Django 
    uv sync
    ```
 
-3. **Configure Environment:**
-   Create a `.env` file (see `.env.example` for reference):
+3. **Configure environment:** Create a `.env` file (see [.env.example](.env.example)):
    ```bash
-   QDRANT_HOST=localhost
-   QDRANT_PORT=6333
-   NEXTCLOUD_PATH=/mnt/user/photos
+   cp .env.example .env
+   # Edit .env with your settings
    ```
+
+   Key variables:
+
+   | Variable | Description | Example |
+   |----------|-------------|---------|
+   | `QDRANT_URL` | Full URL to Qdrant instance | `http://localhost:6333` |
+   | `MEDIA_ROOT` | Path to your photo library | `/mnt/user/photos` |
+   | `SECRET_KEY` | Django secret key | _(auto-generated random string)_ |
+   | `DEBUG` | Debug mode | `True` or `False` |
+
+4. **Run migrations:**
+   ```bash
+   ./manage migrate
+   ```
+
+5. **Start the development server:**
+   ```bash
+   ./manage runserver
+   ```
+
+#### Docker Compose
+
+1. **Clone and configure:**
+   ```bash
+   git clone https://github.com/coenvdgrinten/latent-search.git
+   cd latent-search
+   cp .env.example .env
+   # Edit .env — at minimum set SECRET_KEY and QDRANT_URL
+   ```
+
+2. **Build and start:**
+   ```bash
+   docker compose up --build -d
+   ```
+
+   The bundled `docker-compose.yml` includes an optional Qdrant service. If you already run Qdrant elsewhere, remove or comment out the `qdrant` service and its `depends_on` entry, then point `QDRANT_URL` at your existing instance (e.g., `http://host.docker.internal:6333`). See [INSTALL_UNRAID.md](INSTALL_UNRAID.md) for more details.
+
+3. **Access the app** at `http://localhost:8000`.
+
+### Indexing Your Media
+
+Once the server is running, discover and index media files:
+
+```bash
+# Native
+uv run python manage.py index_media /path/to/photos
+
+# Docker
+docker exec latentsearch python manage.py index_media /nc_data/<username>/files/Photos
+```
 
 ## Development
 
