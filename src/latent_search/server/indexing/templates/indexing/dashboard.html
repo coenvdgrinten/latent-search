@@ -609,6 +609,23 @@
               setButtonsEnabled(hasRoot);
             }
 
+            // Adopt any running job detected after a page refresh
+            if (data.jobs && !activeJob) {
+              for (var k = 0; k < data.jobs.length; k++) {
+                if (data.jobs[k].status === 'running') {
+                  activeJob = data.jobs[k].kind;
+                  showProgress(true);
+                  btnCancel.style.display = ''; // ty: ignore[incompatible-types]
+                  setButtonsEnabled(false);
+                  // Fast polling while caught-up job runs
+                  if (!pollTimer) {
+                    pollTimer = setInterval(pollStats, 1000);
+                  }
+                  break;
+                }
+              }
+            }
+
             // Update progress if a job is running
             if (data.jobs) {
               data.jobs.forEach(function(j) {
