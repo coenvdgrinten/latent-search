@@ -53,7 +53,8 @@ class ExifService:
             # Capture time
             try:
                 raw = exif.datetime_original
-                meta.taken_at = datetime.strptime(raw, "%Y:%m:%d %H:%M:%S")
+                dt = datetime.strptime(raw, "%Y:%m:%d %H:%M:%S")
+                meta.taken_at = dt.replace(tzinfo=datetime.UTC)
             except Exception:
                 pass
 
