@@ -1,8 +1,8 @@
 import base64
-
-from django.http import FileResponse, HttpRequest, Http404, HttpResponse, JsonResponse
-from django.shortcuts import render
 from pathlib import Path
+
+from django.http import FileResponse, Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import render
 
 from latent_search.server.indexing.apps import _model_ready_event
 from latent_search.server.indexing.services.search import (
@@ -52,7 +52,7 @@ def model_ready_check(_request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ready": _model_ready_event.is_set()})
 
 
-def serve_image(request: HttpRequest, b64_path: str) -> HttpResponse:
+def serve_image(request: HttpRequest, b64_path: str) -> FileResponse:
     """Serve an image from an arbitrary filesystem path.
 
     ``b64_path`` is a base64-encoded absolute path, avoiding URL-escaping issues
@@ -60,8 +60,8 @@ def serve_image(request: HttpRequest, b64_path: str) -> HttpResponse:
     """
     try:
         decoded = base64.b64decode(b64_path).decode()
-    except Exception:
-        raise Http404("Invalid path encoding")
+    except Exception as exc:
+        raise Http404("Invalid path encoding") from exc
 
     filepath = Path(decoded)
     if not filepath.exists():

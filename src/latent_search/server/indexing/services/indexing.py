@@ -47,12 +47,6 @@ class IndexingService:
         for path in tqdm(media_paths, desc="Discovering", unit="files"):
             abs_path = str(path.absolute())
 
-            # Skip if already tracked
-            if IndexedMedia.objects.filter(file_path=abs_path).exists():
-                continue
-
-            discovered += 1
-
             # Basic stats for initial record
             try:
                 stat = path.stat()
@@ -69,19 +63,23 @@ class IndexingService:
             mime_type, _ = mimetypes.guess_type(path.name)
             meta = self.exif.read_metadata(path)
 
-            IndexedMedia.objects.create(
+            _, created = IndexedMedia.objects.get_or_create(
                 file_path=abs_path,
-                filename=path.name,
-                relative_path=rel_path,
-                file_size=file_size,
-                mime_type=mime_type or "",
-                taken_at=meta.taken_at,
-                width=meta.width,
-                height=meta.height,
-                latitude=meta.latitude,
-                longitude=meta.longitude,
-                is_indexed=False,
+                defaults={
+                    "filename": path.name,
+                    "relative_path": rel_path,
+                    "file_size": file_size,
+                    "mime_type": mime_type or "",
+                    "taken_at": meta.taken_at,
+                    "width": meta.width,
+                    "height": meta.height,
+                    "latitude": meta.latitude,
+                    "longitude": meta.longitude,
+                    "is_indexed": False,
+                },
             )
+            if created:
+                discovered += 1
 
         return discovered
 
