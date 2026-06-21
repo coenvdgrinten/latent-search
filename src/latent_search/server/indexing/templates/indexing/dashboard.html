@@ -621,11 +621,23 @@
                     // Job finished — stop polling loop
                     clearInterval(pollTimer);
                     pollTimer = null;
+                    var hadError = j.status === 'error';
+                    var errorMsg = j.error || '';
                     activeJob = null;
                     setButtonsEnabled(true);
-                    showProgress(false);
-                    // Refresh stats once more
-                    pollStats();
+
+                    if (hadError && errorMsg) {
+                      // Flash error in place of progress message, auto-clear after 10s
+                      progressMessage.textContent = '⚠ ' + errorMsg;
+                      progressMessage.style.color = 'var(--color-error)';
+                    }
+
+                    setTimeout(function() {
+                      showProgress(false);
+                      progressMessage.style.color = '';
+                      // Refresh stats once more
+                      pollStats();
+                    }, hadError ? 10000 : 0);
                   }
                 }
               });
