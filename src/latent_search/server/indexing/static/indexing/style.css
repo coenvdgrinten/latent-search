@@ -1108,3 +1108,182 @@ footer {
   color: var(--color-text-muted);
   font-style: italic;
 }
+
+/* ── Transfer Row ─────────────────────────────────────── */
+
+.transfer-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  justify-content: center;
+}
+
+.btn-transfer,
+.btn-transfer-guide {
+  flex: 1;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-transfer {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.btn-transfer:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+}
+
+.btn-transfer:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-transfer-guide {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px dashed var(--color-border-focus);
+}
+
+.btn-transfer-guide:hover {
+  background: rgba(211, 47, 47, 0.08);
+}
+
+/* ── Modal Overlay ────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 640px;
+  width: calc(100% - var(--space-lg));
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  background: var(--color-surface);
+  border: var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  color: var(--color-text);
+}
+
+.modal-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+  color: var(--color-text);
+}
+
+.modal-content h2 {
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-size-xl);
+}
+
+.modal-intro {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.guide-steps {
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.guide-steps li {
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.guide-steps kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.guide-steps code {
+  display: block;
+  margin-top: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+.faq-section {
+  margin-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md);
+}
+
+.faq-section summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+.faq-section dl {
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.faq-section dt {
+  color: var(--color-text);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+}
+
+.faq-section dd {
+  margin-left: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+}

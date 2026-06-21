@@ -13,4 +13,7 @@ urlpatterns = [
     path("api/start_job", views.start_job, name="api-start-job"),
     path("api/stop_job", views.stop_job, name="api-stop-job"),
     path("api/save_settings", views.save_settings, name="api-save-settings"),
+    # Library transfer (cross-machine workflow)
+    path("api/export_library", views.export_library, name="api-export-library"),
+    path("api/import_library", views.import_library, name="api-import-library"),
 ]

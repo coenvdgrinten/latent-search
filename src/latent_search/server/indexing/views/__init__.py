@@ -1,3 +1,7 @@
+from latent_search.server.indexing.services.library_transfer import (
+    export_library,
+    import_library,
+)
 from latent_search.server.indexing.views.admin_ops import (
     get_stats,
     save_settings,
@@ -18,4 +22,6 @@ __all__ = [
     "start_job",
     "stop_job",
     "save_settings",
+    "export_library",
+    "import_library",
 ]

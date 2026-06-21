@@ -115,6 +115,13 @@
             <button class="btn-action btn-enrich" id="btn-enrich" disabled>✨ Captions</button>
           </div>
 
+          <!-- Transfer buttons -->
+          <div class="transfer-row">
+            <button class="btn-transfer" id="btn-export" title="Export library metadata">📤 Export</button>
+            <button class="btn-transfer" id="btn-import" title="Import library metadata">📥 Import</button>
+            <button class="btn-transfer-guide" id="btn-transfer-guide" title="How to use export/import">ℹ️ Guide</button>
+          </div>
+
           <!-- Progress area (collapsed initially) -->
           <div class="progress-area collapsed" id="progress-area">
             <div class="progress-bar-track">
@@ -143,6 +150,61 @@
     Powered by CLIP · Qdrant · Qwen VLM · Django
   </footer>
   {% endif %}
+
+  <!-- Transfer Guide Modal -->
+  <div class="modal-overlay" id="transfer-guide-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h2>🔄 Cross-Machine Caption Workflow</h2>
+      <p class="modal-intro">
+        Use this to offload caption generation (VLM) to a GPU-enabled machine.
+        Both machines need access to the same photo files.
+      </p>
+
+      <ol class="guide-steps">
+        <li>
+          <strong>On your main (CPU) machine:</strong><br>
+          Click <kbd>Export</kbd>. Choose "Uncaptioned only" for smaller transfers.<br>
+          Download an <code>.ndjson</code> file with your library metadata.
+        </li>
+        <li>
+          <strong>Transfer the file to your GPU box:</strong><br>
+          Copy it via USB, SCP, or any method you prefer:<br>
+          <code>scp latent_export*.ndjson user@gpu-box:/tmp/</code>
+        </li>
+        <li>
+          <strong>On the GPU machine:</strong><br>
+          Open Latent Search → click <kbd>Import</kbd> → select the exported file.<br>
+          Set the media root to match where photos live on this machine.<br>
+          Click <kbd>Captions</kbd> — GPU acceleration will speed things up dramatically.
+        </li>
+        <li>
+          <strong>After captions are done:</strong><br>
+          Click <kbd>Export</kbd> again (choose "All" to get everything).<br>
+          Transfer the file back to your main machine.
+        </li>
+        <li>
+          <strong>Back on your main machine:</strong><br>
+          Click <kbd>Import</kbd> → select the returned file.<br>
+          Your captions merge into existing records automatically.
+        </li>
+      </ol>
+
+      <details class="faq-section">
+        <summary>Frequently asked questions</summary>
+        <dl>
+          <dt>Do both machines need the same Qdrant instance?</dt>
+          <dd>No. Each server manages its own vector database independently.</dd>
+          <dt>Will importing erase my existing data?</dt>
+          <dd>No. Records are matched by file path and merged — nothing is deleted.</dd>
+          <dt>Can I use this as a backup?</dt>
+          <dd>Yes — exporting all records gives you a portable snapshot of your library metadata.</dd>
+          <dt>Does this export image files?</dt>
+          <dd>No — only metadata (paths, timestamps, captions). Images stay on disk.</dd>
+        </dl>
+      </details>
+    </div>
+  </div>
 
   <!-- Lightbox Modal -->
   <div class="lightbox-overlay" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
@@ -645,6 +707,84 @@
       if (adminToggle) adminToggle.addEventListener('click', function() {
         settingsArea.classList.toggle('collapsed');
       });
+
+      // ── Transfer: Export ──
+      var btnExport = document.getElementById('btn-export');
+      if (btnExport) {
+        btnExport.addEventListener('click', function() {
+          var opt = prompt(
+            'Export filter:\n  uncaptioned — only entries without captions\n  all       — entire library\n\nType "uncaptioned" or "all" (default: uncaptioned)',
+            'uncaptioned'
+          );
+          if (opt === null) return; // cancelled
+          var q = opt.trim().toLowerCase();
+          var params = '?indexed_only=true';
+          if (q === 'uncaptioned') {
+            params += '&uncaptioned_only=true';
+          }
+          window.open('/api/export_library' + params, '_blank');
+        });
+      }
+
+      // ── Transfer: Import (hidden file picker) ──
+      var btnImport = document.getElementById('btn-import');
+      var importInput = document.createElement('input');
+      importInput.type = 'file';
+      importInput.accept = '.ndjson,.json';
+      importInput.style.display = 'none';
+      document.body.appendChild(importInput);
+      if (btnImport) {
+        btnImport.addEventListener('click', function() {
+          importInput.click();
+        });
+      }
+      importInput.addEventListener('change', function() {
+        var file = importInput.files?.[0];
+        if (!file) return;
+        var fd = new FormData();
+        fd.append('file', file);
+        progressMessage.textContent = 'Uploading ' + file.name + '…';
+        showProgress(true);
+        fetch('/api/import_library', { method: 'POST', body: fd })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            showProgress(false);
+            if (data.error) {
+              alert('Import error: ' + data.error);
+            } else {
+              progressMessage.textContent =
+                '✓ Imported: ' + data.created + ' new, ' + data.updated + ' updated' +
+                (data.errors ? ', ' + data.errors + ' errors' : '') + '.';
+              setTimeout(function() { progressMessage.textContent = 'Idle'; }, 4000);
+              pollStats();
+            }
+          })
+          .catch(function(err) {
+            showProgress(false);
+            alert('Failed to import: ' + err.message);
+          })
+          .finally(function() { importInput.value = ''; });
+      });
+
+      // ── Transfer Guide Modal ──
+      var btnGuide = document.getElementById('btn-transfer-guide');
+      var guideModal = document.getElementById('transfer-guide-modal');
+      var guideClose = guideModal?.querySelector('.modal-close');
+      if (btnGuide && guideModal) {
+        function openGuide() {
+          guideModal.setAttribute('aria-hidden', 'false');
+          guideModal.classList.add('visible');
+        }
+        function closeGuide() {
+          guideModal.classList.remove('visible');
+          guideModal.setAttribute('aria-hidden', 'true');
+        }
+        btnGuide.addEventListener('click', openGuide);
+        if (guideClose) guideClose.addEventListener('click', closeGuide);
+        guideModal.addEventListener('click', function(e) {
+          if (e.target === guideModal) closeGuide();
+        });
+      }
     })();
   </script>
 </body>
