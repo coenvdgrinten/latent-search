@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from django.conf import settings
 from httpx import ConnectError
@@ -46,19 +45,17 @@ class SearchService:
         """
         Construct a URL for serving the image file.
 
-        Maps the absolute file path to a media URL based on MEDIA_ROOT.
-        For example: /path/to/media/photos/img.jpg -> /media/photos/img.jpg
+        Encodes the absolute filesystem path as base64 so special characters
+        (slashes, apostrophes) don't break the URL. Served via the image-proxy
+        view which streams from any path on disk.
         """
+        import base64
+
         if not file_path:
             return None
 
-        media_root = Path(settings.MEDIA_ROOT).resolve()
-        try:
-            relative = Path(file_path).resolve().relative_to(media_root)
-            return f"{settings.MEDIA_URL}{relative}"
-        except ValueError:
-            # File is not under MEDIA_ROOT
-            return None
+        encoded = base64.urlsafe_b64encode(file_path.encode()).decode()
+        return f"/image/{encoded}/"
 
     def _build_payload_filter(self, parsed: ParsedQuery) -> Filter | None:
         """Build a Qdrant payload filter from parsed query entities."""

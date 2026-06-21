@@ -7,4 +7,5 @@ app_name = "indexing"
 urlpatterns = [
     path("", views.search_dashboard, name="dashboard"),
     path("ready", views.model_ready_check, name="ready"),
+    path("image/<str:b64_path>/", views.serve_image, name="serve-image"),
 ]
