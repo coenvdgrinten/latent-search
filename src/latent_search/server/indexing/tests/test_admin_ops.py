@@ -2,11 +2,16 @@
 
 import json
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 
 
 class AdminOpsApiTest(TestCase):
     """Test GET /api/stats and POST /api/save_settings endpoints."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="admin", password="pass")
+        self.client.login(username="admin", password="pass")
 
     def test_get_stats_returns_library_and_jobs(self):
         resp = self.client.get("/api/stats")

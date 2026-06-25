@@ -16,6 +16,7 @@ from latent_search.server.indexing.services.job_manager import (
     job_manager,
 )
 from latent_search.server.indexing.services.vlm import VLMService
+from latent_search.server.indexing.views.decorators import login_required_json
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,7 @@ def _stats() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+@login_required_json
 def get_stats(_request: HttpRequest) -> JsonResponse:
     """GET /api/stats – return library + job statuses."""
     return JsonResponse(
@@ -79,6 +81,7 @@ def get_stats(_request: HttpRequest) -> JsonResponse:
 
 
 @csrf_exempt
+@login_required_json
 def start_job(request: HttpRequest) -> JsonResponse:
     """POST /api/start_job?kind=indexing&root=/path/to/media
 
@@ -200,6 +203,7 @@ def start_job(request: HttpRequest) -> JsonResponse:
 
 
 @csrf_exempt
+@login_required_json
 def stop_job(request: HttpRequest) -> JsonResponse:
     """POST /api/stop_job?kind=indexing"""
     if request.method != "POST":
@@ -222,6 +226,7 @@ def stop_job(request: HttpRequest) -> JsonResponse:
 
 
 @csrf_exempt
+@login_required_json
 def save_settings(request: HttpRequest) -> JsonResponse:
     """POST /api/save_settings body: {"media_root": "/path"}"""
     if request.method != "POST":

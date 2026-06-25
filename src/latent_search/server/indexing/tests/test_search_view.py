@@ -1,6 +1,7 @@
 from typing import override
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
 
 from latent_search.server.indexing.views.search_view import search_dashboard
@@ -10,6 +11,14 @@ class SearchDashboardViewTest(TestCase):
     @override
     def setUp(self):
         self.factory = RequestFactory()
+        self.user = User.objects.create_user(username="admin", password="pass")
+
+    def _make_request(self, path, data=None, **kwargs):
+        """Create a request with an authenticated user."""
+        request = self.factory.get(path, data or {}, **kwargs)
+        request.user = self.user
+        request.session = {}
+        return request
 
     @patch("latent_search.server.indexing.views.search_view.render")
     @patch("latent_search.server.indexing.views.search_view.search_service")
@@ -17,7 +26,7 @@ class SearchDashboardViewTest(TestCase):
         """A GET request with no query string should render with empty results."""
         mock_render.return_value = MagicMock()
 
-        request = self.factory.get("/")
+        request = self._make_request("/")
         search_dashboard(request)
 
         mock_service.semantic_search.assert_not_called()
@@ -35,7 +44,7 @@ class SearchDashboardViewTest(TestCase):
             {"id": "1", "score": 0.9, "file_path": "/img.jpg", "file_name": "img.jpg"}
         ]
 
-        request = self.factory.get("/", {"q": "sunset"})
+        request = self._make_request("/", {"q": "sunset"})
         search_dashboard(request)
 
         mock_service.semantic_search.assert_called_once_with(query="sunset", limit=24)
@@ -52,7 +61,7 @@ class SearchDashboardViewTest(TestCase):
         """A query of only whitespace should be treated as no query."""
         mock_render.return_value = MagicMock()
 
-        request = self.factory.get("/", {"q": "   "})
+        request = self._make_request("/", {"q": "   "})
         search_dashboard(request)
 
         mock_service.semantic_search.assert_not_called()

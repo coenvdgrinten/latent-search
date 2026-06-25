@@ -9,6 +9,7 @@ from django.http import FileResponse, HttpRequest, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from latent_search.server.indexing.models.media import IndexedMedia
+from latent_search.server.indexing.views.decorators import login_required_json
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ def _deserialize_line(line: str) -> dict | None:
         return None
 
 
+@login_required_json
 def export_library(request: HttpRequest) -> FileResponse:
     """GET /api/export_library?[indexed_only=true]&[uncaptioned_only=false]
 
@@ -96,6 +98,7 @@ def export_library(request: HttpRequest) -> FileResponse:
 
 
 @csrf_exempt
+@login_required_json
 def import_library(request: HttpRequest) -> JsonResponse:
     """POST /api/import_library
 
@@ -148,13 +151,15 @@ def import_library(request: HttpRequest) -> JsonResponse:
             logger.warning("Failed to import %s: %s", fp, exc)
             errors += 1
 
-    return JsonResponse({
-        "status": "ok",
-        "total_lines": total,
-        "created": created,
-        "updated": updated,
-        "errors": errors,
-    })
+    return JsonResponse(
+        {
+            "status": "ok",
+            "total_lines": total,
+            "created": created,
+            "updated": updated,
+            "errors": errors,
+        }
+    )
 
 
 def _clean_defaults(record: dict) -> dict:

@@ -8,6 +8,7 @@ from latent_search.server.indexing.views.admin_ops import (
     start_job,
     stop_job,
 )
+from latent_search.server.indexing.views.auth import login_view, logout_view
 from latent_search.server.indexing.views.search_view import (
     model_ready_check,
     search_dashboard,
@@ -24,4 +25,6 @@ __all__ = [
     "save_settings",
     "export_library",
     "import_library",
+    "login_view",
+    "logout_view",
 ]

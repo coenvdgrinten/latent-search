@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 from typing import override
 
+from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 
@@ -15,6 +16,8 @@ class ExportImportTest(TestCase):
     @override
     def setUp(self) -> None:
         self.client = Client()
+        self.user = User.objects.create_user(username="admin", password="pass")
+        self.client.login(username="admin", password="pass")
         self.id1 = uuid.uuid4()
         self.id2 = uuid.uuid4()
         self.taken = datetime(2024, 7, 15, 10, 30, 0)
@@ -22,43 +25,45 @@ class ExportImportTest(TestCase):
         # Three records with varying caption states
         from latent_search.server.indexing.models.media import IndexedMedia
 
-        IndexedMedia.objects.bulk_create([
-            IndexedMedia(
-                file_path="/photos/a.jpg",
-                filename="a.jpg",
-                relative_path="a.jpg",
-                file_size=1000,
-                mime_type="image/jpeg",
-                is_indexed=True,
-                vector_id=self.id1,
-                taken_at=self.taken,
-                latitude=52.0,
-                longitude=5.0,
-                width=1920,
-                height=1080,
-                caption="sample caption A",
-                vlm_caption="A red sunset over mountains",
-            ),
-            IndexedMedia(
-                file_path="/photos/b.jpg",
-                filename="b.jpg",
-                relative_path="b.jpg",
-                file_size=2000,
-                mime_type="image/jpeg",
-                is_indexed=True,
-                vector_id=self.id2,
-                vlm_caption="",  # uncaptioned
-            ),
-            IndexedMedia(
-                file_path="/photos/c.raw",
-                filename="c.raw",
-                relative_path="c.raw",
-                file_size=5000,
-                mime_type="image/x-canon-cr2",
-                is_indexed=False,  # not indexed yet
-                vlm_caption="",
-            ),
-        ])
+        IndexedMedia.objects.bulk_create(
+            [
+                IndexedMedia(
+                    file_path="/photos/a.jpg",
+                    filename="a.jpg",
+                    relative_path="a.jpg",
+                    file_size=1000,
+                    mime_type="image/jpeg",
+                    is_indexed=True,
+                    vector_id=self.id1,
+                    taken_at=self.taken,
+                    latitude=52.0,
+                    longitude=5.0,
+                    width=1920,
+                    height=1080,
+                    caption="sample caption A",
+                    vlm_caption="A red sunset over mountains",
+                ),
+                IndexedMedia(
+                    file_path="/photos/b.jpg",
+                    filename="b.jpg",
+                    relative_path="b.jpg",
+                    file_size=2000,
+                    mime_type="image/jpeg",
+                    is_indexed=True,
+                    vector_id=self.id2,
+                    vlm_caption="",  # uncaptioned
+                ),
+                IndexedMedia(
+                    file_path="/photos/c.raw",
+                    filename="c.raw",
+                    relative_path="c.raw",
+                    file_size=5000,
+                    mime_type="image/x-canon-cr2",
+                    is_indexed=False,  # not indexed yet
+                    vlm_caption="",
+                ),
+            ]
+        )
 
     def _parse_export_response(self, resp) -> list[dict]:
         """Extract JSON records from an export response."""
@@ -88,7 +93,6 @@ class ExportImportTest(TestCase):
         records = self._parse_export_response(resp)
         self.assertEqual(len(records), 3)
 
-
     def test_export_uncaptioned_filters_captions(self) -> None:
         resp = self.client.get(
             "/api/export_library?indexed_only=true&uncaptioned_only=true"
@@ -100,9 +104,7 @@ class ExportImportTest(TestCase):
 
     def test_export_contains_schema_version(self) -> None:
         resp = self.client.get("/api/export_library")
-        full_text = "".join(
-            chunk.decode() for chunk in resp.streaming_content
-        )
+        full_text = "".join(chunk.decode() for chunk in resp.streaming_content)
         first_line = full_text.splitlines()[0].strip()
         self.assertTrue(first_line.startswith("#"))
         self.assertIn("schema", first_line.lower())
@@ -146,7 +148,9 @@ class ExportImportTest(TestCase):
 
         from latent_search.server.indexing.models.media import IndexedMedia
 
-        self.assertTrue(IndexedMedia.objects.filter(file_path="/photos/new.jpg").exists())
+        self.assertTrue(
+            IndexedMedia.objects.filter(file_path="/photos/new.jpg").exists()
+        )
 
     def test_import_updates_existing_records(self) -> None:
         # Simulate receiving an updated caption for /photos/a.jpg
@@ -175,12 +179,14 @@ class ExportImportTest(TestCase):
             "is_indexed": False,
             "vlm_caption": "",
         }
-        result = self._upload_ndjson([
-            "# comment line",
-            "",
-            json.dumps(record),
-            "   ",
-        ])
+        result = self._upload_ndjson(
+            [
+                "# comment line",
+                "",
+                json.dumps(record),
+                "   ",
+            ]
+        )
         self.assertEqual(result["total_lines"], 1)
         self.assertEqual(result["created"], 1)
 
