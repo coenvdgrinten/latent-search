@@ -29,7 +29,17 @@ class GeocodingService:
         self.cache_db = cache_db or self.CACHE_DB
         self._lock = threading.Lock()
         self._last_request_time = 0.0
-        self._ensure_table()
+        try:
+            self._ensure_table()
+        except sqlite3.OperationalError:
+            # Fallback for containers / read-only filesystems: use /tmp
+            self.cache_db = Path("/tmp") / ".latent_search_geocache.sqlite"
+            logger.warning(
+                "Cannot open %s, falling back to %s",
+                self.CACHE_DB,
+                self.cache_db,
+            )
+            self._ensure_table()
 
     def reverse_geocode(self, latitude: float, longitude: float) -> str | None:
         """

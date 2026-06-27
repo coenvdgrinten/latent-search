@@ -335,9 +335,7 @@ class Command(BaseCommand):
     ) -> None:
         """POST an NDJSON batch back to /api/import_library."""
         if dry_run:
-            self.stdout.write(
-                f"  [dry-run] would write back {len(records)} record(s)."
-            )
+            self.stdout.write(f"  [dry-run] would write back {len(records)} record(s).")
             return
 
         buf = io.StringIO()
@@ -360,9 +358,7 @@ class Command(BaseCommand):
                 f"  writeback failed (HTTP {resp.status_code}): {resp.text[:200]}"
             )
         else:
-            self.stdout.write(
-                f"  wrote back {len(records)} record(s): {resp.json()}"
-            )
+            self.stdout.write(f"  wrote back {len(records)} record(s): {resp.json()}")
 
 
 class _CaptionMedia:

@@ -54,8 +54,11 @@ COPY src/ ./src/
 
 RUN mkdir -p /app/media
 
-RUN groupadd -r app && useradd -r -g app appuser && \
+RUN groupadd -r app && useradd -r -g app -d /app appuser && \
     chown -R appuser:app /app
+
+# Set home to /app so Path.home() resolves to a writable directory
+ENV HOME=/app
 
 EXPOSE 8000
 

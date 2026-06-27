@@ -12,9 +12,11 @@ import logging
 import os
 
 import torch
+
 # Attempt to import DirectML backend if available. It registers a "privateuseone" device.
 try:
     import torch_directml  # noqa: F401
+
     _has_directml = True
 except Exception:  # pragma: no cover – optional dependency
     _has_directml = False
@@ -50,7 +52,9 @@ def get_device() -> str:
             _DEVICE = str(dev)
             logger.info(f"DirectML available — using device {_DEVICE}")
         except Exception as exc:  # pragma: no cover
-            logger.warning(f"DirectML import succeeded but device creation failed: {exc}")
+            logger.warning(
+                f"DirectML import succeeded but device creation failed: {exc}"
+            )
             _DEVICE = "cpu"
     else:
         _DEVICE = "cpu"
