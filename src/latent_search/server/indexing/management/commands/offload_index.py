@@ -15,6 +15,7 @@ import json
 import logging
 import tempfile
 import time
+import traceback
 import uuid
 from pathlib import Path
 from typing import override
@@ -306,6 +307,7 @@ class Command(BaseCommand):
             except Exception as exc:
                 logger.error("Failed to process %s: %s", file_path, exc, exc_info=True)
                 self.stderr.write(f"  error: {file_path}: {exc}")
+                self.stderr.write(traceback.format_exc())
                 errors += 1
 
             # 8. Flush write-back batch
