@@ -1,7 +1,4 @@
-FROM python:3.12-alpine AS builder
-
-# Install build tools needed for compiling wheels (C++ compiler, BLAS, etc.)
-# Use Debian‑based image for glibc compatibility (torch requires glibc symbols)
+# Build stage: compile Python wheels with C++ toolchain
 FROM python:3.12-slim AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -27,9 +24,13 @@ RUN pip install --prefix=/install \
     --no-cache-dir \
     -r requirements.txt
 
-RUN apk del --purge gcc musl-dev jpeg-dev zlib-dev libpng-dev && \
-    rm -rf /var/cache/apk/*
+# Remove build tools (Debian apt), not Alpine apk
+RUN apt-get remove -y --purge build-essential gcc g++ libopenblas-dev \
+    libjpeg-dev zlib1g-dev libpng-dev \
+    && apt-get autoremove -y --purge \
+    && rm -rf /var/lib/apt/lists/*
 
+# Runtime stage: minimal Debian image with only runtime libs
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -53,7 +54,7 @@ COPY src/ ./src/
 
 RUN mkdir -p /app/media
 
-RUN addgroup -S app && adduser -S -G app appuser && \
+RUN groupadd -r app && useradd -r -g app appuser && \
     chown -R appuser:app /app
 
 EXPOSE 8000
