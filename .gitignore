@@ -27,6 +27,10 @@ build/
 dist/
 *.egg-info/
 
+# IDE and CI configuration directories
+.vscode/
+.github/
+
 # OS
 .DS_Store
 Thumbs.db
