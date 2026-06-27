@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import nullcontext
 
 import torch
 from transformers import AutoModel  # ty: ignore[possibly-missing-import]
@@ -146,8 +147,17 @@ class CLIPService:
         missing or unreadable files.
         """
         try:
+            # autocast only works on CUDA and CPU. DirectML (privateuseone)
+            # doesn't support autocast — skip it to avoid "Cannot set
+            # version_counter for inference tensor" on DirectML backends.
+            use_autocast = self.device in ("cuda", "cpu")
             device_type = "cuda" if self.device == "cuda" else "cpu"
-            with torch.no_grad(), torch.amp.autocast(device_type, enabled=True):
+            ctx = (
+                torch.amp.autocast(device_type, enabled=True)
+                if use_autocast
+                else nullcontext()
+            )
+            with torch.no_grad(), ctx:
                 embeddings = self.model.encode_image(
                     [image_path], truncate_dim=self.truncate_dim
                 )
