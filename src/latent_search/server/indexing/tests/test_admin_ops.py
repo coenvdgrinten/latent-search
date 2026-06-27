@@ -1,6 +1,7 @@
 """Tests for the admin operations API endpoints."""
 
 import json
+from typing import override
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -9,7 +10,8 @@ from django.test import TestCase
 class AdminOpsApiTest(TestCase):
     """Test GET /api/stats and POST /api/save_settings endpoints."""
 
-    def setUp(self):
+    @override
+    def setUp(self) -> None:
         self.user = User.objects.create_user(username="admin", password="pass")
         self.client.login(username="admin", password="pass")
 

@@ -148,6 +148,14 @@ WHITENOISE_USE_FINDERS = True
 MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", BASE_DIR.parent.parent.parent / "media"))
 MEDIA_URL = "/media/"
 
+# Enable/disable the folder‑watcher. Default is disabled for production; the
+# Docker compose file explicitly sets it to "true" for the watcher container.
+MEDIA_WATCH_ENABLED = os.getenv("MEDIA_WATCH_ENABLED", "false").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
 # Qdrant Settings
 _qdrant_host = os.getenv("QDRANT_HOST", "localhost")
 _qdrant_port = os.getenv("QDRANT_PORT", "6333")

@@ -22,6 +22,7 @@ dependencies = [
     "accelerate>=1.13.0",
     "gunicorn>=23.0.0",
     "whitenoise>=6.7.0",
+    "watchdog>=6.0.0",
 ]
 
 [build-system]

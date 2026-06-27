@@ -80,9 +80,7 @@ class _EnrichmentJob(JobInfo):
     KIND = JobKind.ENRICHMENT
 
 
-# ---------------------------------------------------------------------------
 # Module-level singleton
-# ---------------------------------------------------------------------------
 
 
 class JobManager:

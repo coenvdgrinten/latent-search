@@ -19,9 +19,7 @@ Usage:
 
 from __future__ import annotations
 
-# ---------------------------------------------------------------------------
 # Test corpus
-# ---------------------------------------------------------------------------
 # Each tuple: (query, expected_filename_substring, category)
 #
 # Ground truth derived from indexed media metadata:

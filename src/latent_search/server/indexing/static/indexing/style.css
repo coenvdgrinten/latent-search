@@ -142,6 +142,33 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
+  /* Layout for header elements */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap; /* keep items on one line on larger screens */
+  gap: var(--space-md);
+}
+
+/* Responsive: stack header items on narrow viewports */
+@media (max-width: 600px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+  header h1 {
+    margin-bottom: var(--space-sm);
+    margin-right: 0;
+  }
+  header .search-form {
+    flex: none;
+    width: 100%;
+  }
+  header .auth-group {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
 }
 
 /* Hidden off-screen left (hero state) — removed from layout flow */
@@ -184,6 +211,9 @@ header h1 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin: 0; /* remove default bottom margin for flex alignment */
+  flex: 0 0 auto; /* prevent h1 from growing */
+  margin-right: var(--space-md);
 }
 
 header h1 span {
@@ -193,20 +223,35 @@ header h1 span {
   background-clip: text;
 }
 
-/* ── Header Auth ── */
-.header-auth {
+/* ── Auth Group (used in header and hero) ── */
+.auth-group {
   display: flex;
   align-items: center;
   gap: var(--space-md);
   margin-top: var(--space-sm);
 }
 
-.header-auth .username {
+/* Remove top margin when auth-group is inside the header (aligned horizontally) */
+header .auth-group {
+  margin-top: 0;
+}
+
+/* In the hero/landing state, pin the auth group to the top-right corner so it
+   doesn't sit awkwardly below the search bar. */
+.hero-container .auth-group {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-xl);
+  margin-top: 0;
+  z-index: 20;
+}
+
+.auth-group .username {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 
-.btn-logout {
+.auth-group .btn-logout {
   color: var(--color-text-muted);
   text-decoration: none;
   font-size: var(--font-size-sm);
@@ -216,7 +261,7 @@ header h1 span {
   transition: all var(--transition-fast);
 }
 
-.btn-logout:hover {
+.auth-group .btn-logout:hover {
   color: var(--color-text);
   border-color: var(--color-primary);
   background: var(--color-primary);
@@ -281,6 +326,19 @@ header h1 span {
   max-width: 720px;
   width: 100%;
   position: relative;
+}
+
+/* When inside the header, let the search form expand to fill remaining space */
+header .search-form {
+  flex: 1 1 auto;
+  max-width: none;
+  width: auto; /* prevent 100% width that pushes auth-group to next line */
+}
+
+/* Ensure the auth group aligns vertically centered in header */
+header .auth-group {
+  align-self: center;
+  margin-left: var(--space-md);
 }
 
 .hero-container .search-form {

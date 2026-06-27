@@ -39,9 +39,7 @@ def _get_vlm_service() -> VLMService:
     return _vlm_svc
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 
 def _stats() -> dict[str, Any]:
@@ -63,9 +61,7 @@ def _stats() -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------
 # Endpoints
-# ---------------------------------------------------------------------------
 
 
 @login_required_json
@@ -243,9 +239,7 @@ def save_settings(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"status": "saved", "media_root": job_manager.media_root})
 
 
-# ---------------------------------------------------------------------------
 # Internal helpers
-# ---------------------------------------------------------------------------
 
 
 def job_update(job, current: int, total: int, message: str) -> None:

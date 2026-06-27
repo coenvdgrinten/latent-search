@@ -35,9 +35,9 @@
         <input class="search-input" type="text" name="q" value="{{ query }}" placeholder="Search your photos…"{% if query %} autofocus{% endif %}>
         <button class="btn-primary" type="submit">Search</button>
     </form>
-    <div class="header-auth">
-        <span class="username">{{ user.username }}</span>
-        <a href="/logout/" class="btn-logout">Logout</a>
+    <div class="auth-group">
+      <span class="username">{{ user.username }}</span>
+      <a href="/logout/" class="btn-logout">Logout</a>
     </div>
   </header>
 
@@ -88,9 +88,9 @@
             <input class="search-input" type="text" name="q" placeholder="Search your photos…" autocomplete="off" autofocus>
             <button class="btn-primary" type="submit">Search</button>
         </form>
-        <div class="hero-auth">
-            <span class="username">{{ user.username }}</span>
-            <a href="/logout/" class="btn-logout">Logout</a>
+        <div class="auth-group">
+          <span class="username">{{ user.username }}</span>
+          <a href="/logout/" class="btn-logout">Logout</a>
         </div>
 
         <!-- Stats + Admin Card -->
