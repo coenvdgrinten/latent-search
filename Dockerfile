@@ -1,15 +1,17 @@
 FROM python:3.12-alpine AS builder
 
 # Install build tools needed for compiling wheels (C++ compiler, BLAS, etc.)
-RUN apk add --no-cache \
-    build-base \
+# Use Debian‑based image for glibc compatibility (torch requires glibc symbols)
+FROM python:3.12-slim AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     gcc \
     g++ \
-    musl-dev \
-    openblas-dev \
-    jpeg-dev \
-    zlib-dev \
-    libpng-dev
+    libopenblas-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
@@ -28,18 +30,19 @@ RUN pip install --prefix=/install \
 RUN apk del --purge gcc musl-dev jpeg-dev zlib-dev libpng-dev && \
     rm -rf /var/cache/apk/*
 
-FROM python:3.12-alpine
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTORCH_DISABLE_AVX512_BF16_MATMUL=1 \
     PYTHONPATH=/app/src:/app
 
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    libjpeg-turbo \
-    libwebp \
-    libpng
+    libjpeg62-turbo \
+    libwebp6 \
+    libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
