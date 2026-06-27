@@ -50,7 +50,7 @@ COPY src/ ./src/
 
 RUN mkdir -p /app/media
 
-RUN groupadd -r app && useradd -r -g app appuser && \
+RUN addgroup -S app && adduser -S -G app appuser && \
     chown -R appuser:app /app
 
 EXPOSE 8000
