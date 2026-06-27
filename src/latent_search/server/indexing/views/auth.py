@@ -5,12 +5,16 @@ import logging
 from django.contrib.auth import logout
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
 
+@csrf_exempt
 def login_view(request: HttpRequest) -> HttpResponse:
-    """Render the login page and handle POST authentication."""
+    """Render the login page and handle POST authentication.
+    CSRF is disabled here so programmatic clients (offload_index) can log in
+    without first scraping the CSRF token from the login form."""
     if request.user.is_authenticated:
         return redirect("/")
 
