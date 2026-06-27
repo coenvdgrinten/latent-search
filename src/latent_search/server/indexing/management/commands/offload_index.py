@@ -114,6 +114,11 @@ class Command(BaseCommand):
             action="store_true",
             help="Skip VLM captioning; embed from existing captions only.",
         )
+        parser.add_argument(
+            "--skip-sparse",
+            action="store_true",
+            help="Skip SPLADE sparse encoding (use when torch < 2.6 blocks .bin weights).",
+        )
 
     @override
     def handle(self, *args, **options):
@@ -123,6 +128,7 @@ class Command(BaseCommand):
         limit = options["limit"]
         reprocess = options["reprocess"]
         skip_vlm = options["skip_vlm"]
+        skip_sparse = options["skip_sparse"]
 
         # ── Resolve Qdrant URL ──
         qdrant_url = options["qdrant_url"]
@@ -199,7 +205,7 @@ class Command(BaseCommand):
         self.stdout.write("Initialising ML services (models load on first use)...")
         clip = CLIPService()
         text_embedding = TextEmbeddingService()
-        sparse_encoding = SparseEncodingService()
+        sparse_encoding = SparseEncodingService() if not skip_sparse else None
         vlm = VLMService() if not skip_vlm else None
         geocoding = GeocodingService()
         vector_db = VectorDBService()
@@ -255,7 +261,11 @@ class Command(BaseCommand):
                     # 4. Embeddings
                     image_embedding = clip.get_image_embedding(tmp_path)
                     text_vec = text_embedding.encode(caption)
-                    sparse_embedding = sparse_encoding.encode_document(caption)
+                    sparse_embedding = (
+                        sparse_encoding.encode_document(caption)
+                        if sparse_encoding
+                        else None
+                    )
 
                     # 5. Vector ID (preserve existing or mint new)
                     vector_id_str = record.get("vector_id")
