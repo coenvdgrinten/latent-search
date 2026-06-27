@@ -40,8 +40,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libjpeg62-turbo \
-    libwebp6 \
-    libpng16-16 \
+    libwebp7 \
+    libpng16-16t64 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
