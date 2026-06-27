@@ -42,6 +42,23 @@ ALLOWED_HOSTS = (
     os.getenv("ALLOWED_HOSTS", "*").split(",") if os.getenv("ALLOWED_HOSTS") else ["*"]
 )
 
+# ----------------------------------------------------------------------
+# CSRF & proxy settings – adjust the origins to match your deployment.
+# ----------------------------------------------------------------------
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    # "https://your-production-domain.com",  # uncomment and set your real domain
+]
+
+# When behind a reverse proxy that terminates TLS, tell Django which header
+# indicates the original scheme.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# In a local/dev environment we typically serve over HTTP, so keep these
+# cookies non‑secure. Set to True in production when using HTTPS.
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+
 
 # Application definition
 
