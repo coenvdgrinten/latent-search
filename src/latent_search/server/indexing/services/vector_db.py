@@ -33,11 +33,16 @@ def _validate_vector(vec: list[float], name: str) -> None:
 
 class VectorDBService:
     def __init__(self):
-        self.client = QdrantClient(
-            url=settings.QDRANT_URL,
-            api_key=settings.QDRANT_API_KEY,
+        # Read env vars at instantiation time (not import time) so the
+        # offload_index command can override QDRANT_URL/API_KEY via CLI flags.
+        import os
+
+        url = os.getenv("QDRANT_URL", settings.QDRANT_URL)
+        api_key = os.getenv("QDRANT_API_KEY", settings.QDRANT_API_KEY)
+        self.client = QdrantClient(url=url, api_key=api_key)
+        self.collection_name = os.getenv(
+            "QDRANT_COLLECTION", settings.QDRANT_COLLECTION
         )
-        self.collection_name = settings.QDRANT_COLLECTION
 
     def ensure_collection(self, vector_size: int = 1024):
         """
