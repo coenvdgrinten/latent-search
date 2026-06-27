@@ -88,7 +88,7 @@ Alternatively, you can pin the Docker Compose binary outside `/usr/local` (e.g.,
 
 ## PUID/PGID User Mapping
 
-LatentSearch runs as `appuser` inside the container. To avoid `Permission denied` errors when scanning mounted host directories, the container can switch its UID/GID at startup to match the host's file ownership.
+LatentSearch's `docker-compose.yml` uses Docker's native `user:` directive to run as the specified UID/GID, matching the host's file ownership. This avoids `Permission denied` errors when scanning mounted host directories.
 
 Unraid shares are typically owned by `nobody:users` (UID 99, GID 100). Set these in your `.env`:
 
@@ -98,6 +98,8 @@ PGID=100
 ```
 
 For other Linux hosts, find your user's UID/GID with `id -u` / `id -g`.
+
+**After changing PUID/PGID**, rebuild with `docker compose build --no-cache` and restart.
 
 ---
 
