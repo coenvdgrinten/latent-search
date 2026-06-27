@@ -40,6 +40,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    gosu \
     libjpeg62-turbo \
     libwebp7 \
     libpng16-16t64 \
@@ -51,11 +52,11 @@ COPY --from=builder /install /usr/local
 
 COPY manage.py manage ./
 COPY src/ ./src/
+COPY entrypoint.sh /
 
-RUN mkdir -p /app/media
-
-RUN groupadd -r app && useradd -r -g app -d /app appuser && \
-    chown -R appuser:app /app
+RUN mkdir -p /app/media \
+    && groupadd -r app && useradd -r -g app -d /app appuser \
+    && chmod +x /entrypoint.sh
 
 # Set home to /app so Path.home() resolves to a writable directory
 ENV HOME=/app
@@ -65,8 +66,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD curl -f http://localhost:8000/admin/login/ || exit 1
 
-USER appuser
-
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["sh", "-c", "python manage.py migrate --noinput && \
     python manage.py collectstatic --noinput && \
     exec gunicorn latent_search.server.config.wsgi:application \
