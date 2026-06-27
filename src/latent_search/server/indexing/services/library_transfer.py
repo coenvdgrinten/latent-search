@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Fields exported per record (order matters for consistency).
 _EXPORT_FIELDS = [
+    "id",
     "file_path",
     "filename",
     "relative_path",

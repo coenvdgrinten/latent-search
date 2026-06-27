@@ -210,6 +210,7 @@ class Command(BaseCommand):
         # ── Process ──
         processed = 0
         errors = 0
+        error_details: list[str] = []
         writeback: list[dict] = []
         start_time = time.time()
 
@@ -217,6 +218,7 @@ class Command(BaseCommand):
             file_path = record.get("file_path")
             media_id = record.get("id")
             if not file_path or media_id is None:
+                error_details.append("Missing file_path or id")
                 errors += 1
                 continue
 
@@ -306,8 +308,7 @@ class Command(BaseCommand):
 
             except Exception as exc:
                 logger.error("Failed to process %s: %s", file_path, exc, exc_info=True)
-                self.stderr.write(f"  error: {file_path}: {exc}")
-                self.stderr.write(traceback.format_exc())
+                error_details.append(f"{file_path}: {exc}\n{traceback.format_exc()}")
                 errors += 1
 
             # 8. Flush write-back batch
@@ -318,6 +319,10 @@ class Command(BaseCommand):
         # Final flush
         if writeback:
             self._post_writeback(session, api_url, writeback, dry_run)
+
+        # Print errors after tqdm so they aren't overwritten
+        for detail in error_details:
+            self.stderr.write(detail)
 
         elapsed = time.time() - start_time
         self.stdout.write("")
