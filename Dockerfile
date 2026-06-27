@@ -1,8 +1,12 @@
-FROM python:3.13-alpine AS builder
+FROM python:3.12-alpine AS builder
 
+# Install build tools needed for compiling wheels (C++ compiler, BLAS, etc.)
 RUN apk add --no-cache \
+    build-base \
     gcc \
+    g++ \
     musl-dev \
+    openblas-dev \
     jpeg-dev \
     zlib-dev \
     libpng-dev
@@ -24,7 +28,7 @@ RUN pip install --prefix=/install \
 RUN apk del --purge gcc musl-dev jpeg-dev zlib-dev libpng-dev && \
     rm -rf /var/cache/apk/*
 
-FROM python:3.13-alpine
+FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
