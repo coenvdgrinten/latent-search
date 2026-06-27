@@ -86,6 +86,21 @@ Alternatively, you can pin the Docker Compose binary outside `/usr/local` (e.g.,
 
 ---
 
+## PUID/PGID User Mapping
+
+LatentSearch runs as `appuser` inside the container. To avoid `Permission denied` errors when scanning mounted host directories, the container can switch its UID/GID at startup to match the host's file ownership.
+
+Unraid shares are typically owned by `nobody:users` (UID 99, GID 100). Set these in your `.env`:
+
+```ini
+PUID=99
+PGID=100
+```
+
+For other Linux hosts, find your user's UID/GID with `id -u` / `id -g`.
+
+---
+
 ## Indexing Media
 
 Once the server is running, discover and index photos:
@@ -128,7 +143,7 @@ Caption generation uses a large vision-language model on CPU — expect several 
 |---------|-----|
 | `QDRANT_URL: unbound variable` | Set `QDRANT_URL` in `.env` before starting. |
 | Model download stalls on first run | The CLIP/VLM models (~several GB) download on first indexing. Wait patiently; they cache afterward. |
-| `Permission denied` on media files | Mount volumes read-only (`:r`) and ensure the container user can traverse parent dirs. |
+| `Permission denied` on media files | Set `PUID=99` and `PGID=100` in `.env` (Unraid's `nobody:users`) and rebuild. See [PUID/PGID](#puidpgid-user-mapping) below. |
 | Container crashes on import | Increase tmpfs size in `docker-compose.yml` if loading large models OOM-kills the process. |
 
 For more help, open an issue on [GitHub](https://github.com/coenvdgrinten/latent-search/issues).

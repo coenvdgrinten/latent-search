@@ -28,6 +28,8 @@ services:
       QDRANT_API_KEY: "${QDRANT_API_KEY:-}"
       HF_HOME: /cache/huggingface
       PYTORCH_DISABLE_AVX512_BF16_MATMUL: "1"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
       LS_USERNAME: "${LS_USERNAME:-}"
       LS_PASSWORD: "${LS_PASSWORD:-}"
     extra_hosts:
@@ -55,6 +57,8 @@ services:
       QDRANT_API_KEY: "${QDRANT_API_KEY:-}"
       HF_HOME: /cache/huggingface
       PYTORCH_DISABLE_AVX512_BF16_MATMUL: "1"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
       MEDIA_WATCH_ENABLED: "true"
     extra_hosts:
       - "host.docker.internal:host-gateway"
