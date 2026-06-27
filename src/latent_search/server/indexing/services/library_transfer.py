@@ -2,10 +2,12 @@
 
 import json
 import logging
+import mimetypes
 from collections.abc import Iterator
 from datetime import datetime
+from pathlib import Path
 
-from django.http import FileResponse, HttpRequest, JsonResponse
+from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from latent_search.server.indexing.models.media import IndexedMedia
@@ -66,9 +68,14 @@ def _deserialize_line(line: str) -> dict | None:
 
 @login_required_json
 def export_library(request: HttpRequest) -> FileResponse:
-    """GET /api/export_library?[indexed_only=true]&[uncaptioned_only=false]
+    """GET /api/export_library
 
     Streams an NDJSON file with one IndexedMedia record per line.
+
+    Filter flags (all optional, combinable):
+        indexed_only=true     — only records with is_indexed=True
+        uncaptioned_only=true — only records with empty vlm_caption
+        pending_only=true     — only records with is_indexed=False
     """
     qs = request.GET
 
@@ -79,6 +86,8 @@ def export_library(request: HttpRequest) -> FileResponse:
         base_qs = base_qs.filter(is_indexed=True)
     if qs.get("uncaptioned_only") == "true":
         base_qs = base_qs.filter(vlm_caption__exact="")
+    if qs.get("pending_only") == "true":
+        base_qs = base_qs.filter(is_indexed=False)
 
     # Limit to reasonable chunk sizes
     queryset = base_qs.order_by("-created_at")
@@ -95,6 +104,35 @@ def export_library(request: HttpRequest) -> FileResponse:
         filename=f"latent_export_{datetime.now():%Y%m%d_%H%M%S}.ndjson",
     )
     return response
+
+
+@login_required_json
+def serve_media_image(request: HttpRequest, media_id: int) -> HttpResponse:
+    """GET /api/media/<id>/image
+
+    Stream the raw image bytes for an IndexedMedia record by primary key.
+    Used by offload workers on remote GPU machines that don't have the
+    Nextcloud mount — they fetch one image at a time, process it, and
+    discard the bytes.
+    """
+    try:
+        media = IndexedMedia.objects.get(pk=media_id)
+    except IndexedMedia.DoesNotExist:
+        return JsonResponse({"error": "Not found"}, status=404)
+
+    path = Path(media.file_path)
+    if not path.is_file():
+        return JsonResponse({"error": "File missing on disk"}, status=410)
+
+    mime, _ = mimetypes.guess_type(path.name)
+    if not mime or not mime.startswith("image/"):
+        return JsonResponse({"error": "Not an image"}, status=415)
+
+    return FileResponse(
+        path.open("rb"),
+        content_type=mime,
+        filename=path.name,
+    )
 
 
 @csrf_exempt

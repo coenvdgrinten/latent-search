@@ -1337,8 +1337,11 @@ footer {
   background: rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
   color: var(--color-text-muted);
-  word-break: break-all;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
 .faq-section {

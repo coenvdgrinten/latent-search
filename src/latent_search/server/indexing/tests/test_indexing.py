@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
@@ -256,3 +256,71 @@ class IndexingServiceTest(TestCase):
         media.refresh_from_db()
         self.assertTrue(media.is_indexed)
         mock_geo_class.return_value.reverse_geocode.assert_not_called()
+
+
+class BuildTextCaptionStaticTest(TestCase):
+    """Verify the extracted static build_text_caption works without a full service."""
+
+    def test_static_caption_without_geocoding(self) -> None:
+        """build_text_caption should work with no geocoder (offload path)."""
+        from datetime import datetime
+
+        media = IndexedMedia.objects.create(
+            file_path="/tmp/eiffel-tower.jpg",
+            filename="eiffel-tower.jpg",
+            relative_path="photos/eiffel-tower.jpg",
+            file_size=1024,
+            taken_at=datetime(2022, 7, 15, 14, 30, 0),
+            latitude=48.8584,
+            longitude=2.2945,
+        )
+        caption = IndexingService.build_text_caption(
+            media, vlm_caption="A tall metal tower"
+        )
+        self.assertIn("A tall metal tower", caption)
+        self.assertIn("eiffel tower", caption)
+        self.assertIn("july", caption)
+        self.assertIn("summer", caption)
+
+    def test_static_caption_with_geocoding(self) -> None:
+        from datetime import datetime
+
+        media = IndexedMedia.objects.create(
+            file_path="/tmp/eiffel-tower.jpg",
+            filename="eiffel-tower.jpg",
+            relative_path="photos/eiffel-tower.jpg",
+            file_size=1024,
+            taken_at=datetime(2022, 7, 15, 14, 30, 0),
+            latitude=48.8584,
+            longitude=2.2945,
+        )
+        geo = MagicMock()
+        geo.reverse_geocode.return_value = "Paris, France"
+        caption = IndexingService.build_text_caption(
+            media, vlm_caption="A tall metal tower", geocoding=geo
+        )
+        self.assertIn("paris", caption)
+        geo.reverse_geocode.assert_called_once()
+
+    def test_static_caption_matches_instance_method(self) -> None:
+        """Static method with injected geocoder must match the instance wrapper."""
+        from datetime import datetime
+
+        media = IndexedMedia.objects.create(
+            file_path="/tmp/test.jpg",
+            filename="test.jpg",
+            relative_path="folder/test.jpg",
+            file_size=1024,
+            taken_at=datetime(2022, 7, 15, 14, 30, 0),
+            latitude=48.8584,
+            longitude=2.2945,
+        )
+        with patch(_GEO_PATCH) as mock_geo_class:
+            mock_geo = mock_geo_class.return_value
+            mock_geo.reverse_geocode.return_value = "Paris, France"
+            service = IndexingService()
+            instance_caption = service._build_text_caption(media, vlm_caption="hello")
+            static_caption = IndexingService.build_text_caption(
+                media, vlm_caption="hello", geocoding=service.geocoding
+            )
+        self.assertEqual(instance_caption, static_caption)

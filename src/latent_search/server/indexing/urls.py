@@ -16,4 +16,9 @@ urlpatterns = [
     # Library transfer (cross-machine workflow)
     path("api/export_library", views.export_library, name="api-export-library"),
     path("api/import_library", views.import_library, name="api-import-library"),
+    path(
+        "api/media/<int:media_id>/image",
+        views.serve_media_image,
+        name="api-media-image",
+    ),
 ]

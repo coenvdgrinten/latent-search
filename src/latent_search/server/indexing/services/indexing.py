@@ -218,8 +218,11 @@ class IndexingService:
         month_word = month_names[media.taken_at.month - 1]
         return f"{month_word} {media.taken_at.year} {season} {time_of_day}"
 
-    def _build_text_caption(
-        self, media: IndexedMedia, vlm_caption: str | None = None
+    @staticmethod
+    def build_text_caption(
+        media: IndexedMedia,
+        vlm_caption: str | None = None,
+        geocoding: GeocodingService | None = None,
     ) -> str:
         """
         Build a searchable text description from VLM visual description,
@@ -227,6 +230,12 @@ class IndexingService:
 
         Parts are concatenated in order of importance (most semantically
         dense first) to minimise CLIP truncation risk.
+
+        This is a static method so offload workers can build identical
+        captions without instantiating the full IndexingService (which
+        would eagerly construct CLIP/VLM/Qdrant clients). Pass a
+        ``GeocodingService`` instance if location enrichment is desired;
+        omit it to skip reverse geocoding.
         """
         segments: list[str] = []
 
@@ -250,8 +259,12 @@ class IndexingService:
             segments.append(path_keywords)
 
         # 2. Reverse-geocoded location
-        if media.latitude is not None and media.longitude is not None:
-            location = self.geocoding.reverse_geocode(
+        if (
+            geocoding is not None
+            and media.latitude is not None
+            and media.longitude is not None
+        ):
+            location = geocoding.reverse_geocode(
                 float(media.latitude),  # ty: ignore[invalid-argument-type]
                 float(media.longitude),  # ty: ignore[invalid-argument-type]
             )
@@ -259,8 +272,16 @@ class IndexingService:
                 segments.append(location.lower())
 
         # 3. Temporal context
-        temporal = self._build_temporal_context(media)
+        temporal = IndexingService._build_temporal_context(media)
         if temporal:
             segments.append(temporal)
 
         return " ".join(segments) if segments else "unknown subject"
+
+    def _build_text_caption(
+        self, media: IndexedMedia, vlm_caption: str | None = None
+    ) -> str:
+        """Instance wrapper around build_text_caption using this service's geocoder."""
+        return self.build_text_caption(
+            media, vlm_caption=vlm_caption, geocoding=self.geocoding
+        )

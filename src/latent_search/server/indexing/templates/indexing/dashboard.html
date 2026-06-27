@@ -128,6 +128,7 @@
             <button class="btn-transfer" id="btn-export" title="Export library metadata">📤 Export</button>
             <button class="btn-transfer" id="btn-import" title="Import library metadata">📥 Import</button>
             <button class="btn-transfer-guide" id="btn-transfer-guide" title="How to use export/import">ℹ️ Guide</button>
+            <button class="btn-transfer-guide" id="btn-offload-guide" title="Offload indexing to a GPU machine">🚀 GPU Offload</button>
           </div>
 
           <!-- Progress area (collapsed initially) -->
@@ -209,6 +210,71 @@
           <dd>Yes — exporting all records gives you a portable snapshot of your library metadata.</dd>
           <dt>Does this export image files?</dt>
           <dd>No — only metadata (paths, timestamps, captions). Images stay on disk.</dd>
+        </dl>
+      </details>
+    </div>
+  </div>
+
+  <!-- GPU Offload Guide Modal -->
+  <div class="modal-overlay" id="offload-guide-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <h2>🚀 Offload Indexing to a GPU Machine</h2>
+      <p class="modal-intro">
+        VLM captioning and CLIP embedding are slow on a low-power CPU.
+        Offload that work to a separate GPU machine — it pulls pending
+        records over HTTP, does the ML work, and pushes vectors straight
+        to this server's Qdrant. No photo copy, no second database.
+      </p>
+
+      <ol class="guide-steps">
+        <li>
+          <strong>On the GPU machine (Linux, Python 3.13+):</strong><br>
+          Clone this repo and install dependencies:
+          <code>git clone https://github.com/coenvdgrinten/latent-search &amp;&amp; cd latent-search &amp;&amp; uv sync</code>
+        </li>
+        <li>
+          <strong>AMD GPU (ROCm) only — set the override:</strong><br>
+          The RX 9070XT is RDNA 4; PyTorch's ROCm wheel exposes it via the
+          <code>torch.cuda</code> API, but needs a version hint:
+          <code>export HSA_OVERRIDE_GFX_VERSION=12.0.0</code>
+          NVIDIA GPUs need no special setup. Verify with
+          <code>uv run python -c "import torch; print(torch.cuda.is_available())"</code>
+        </li>
+        <li>
+          <strong>Point at this server and run:</strong><br>
+          Replace the host, user, and password with your details:
+          <code>export QDRANT_URL=http://THIS-SERVER-IP:6333<br>./manage offload_index \<br>&nbsp;&nbsp;--api-url http://THIS-SERVER-IP:8000 \<br>&nbsp;&nbsp;--api-user admin --api-password '...' \<br>&nbsp;&nbsp;--batch-size 100</code>
+        </li>
+        <li>
+          <strong>Test first (optional but recommended):</strong><br>
+          Force CPU and process 5 records without writing anything:
+          <code>LS_DEVICE=cpu ./manage offload_index \<br>&nbsp;&nbsp;--api-url http://THIS-SERVER-IP:8000 \<br>&nbsp;&nbsp;--api-user admin --api-password '...' \<br>&nbsp;&nbsp;--limit 5 --dry-run</code>
+          Then drop <code>--dry-run</code> for a real 5-record test, then
+          run the full command for the whole library.
+        </li>
+        <li>
+          <strong>That's it.</strong><br>
+          Vectors land in this server's Qdrant directly; captions and
+          <code>is_indexed</code> flags are written back here. Search works
+          immediately. The command is resumable — re-run it any time to
+          pick up newly-added photos.
+        </li>
+      </ol>
+
+      <details class="faq-section">
+        <summary>Frequently asked questions</summary>
+        <dl>
+          <dt>Does the GPU machine need access to my photos?</dt>
+          <dd>No. It fetches each image over HTTP from this server, one at a time, processes it, and discards the bytes.</dd>
+          <dt>Does it need its own Qdrant or database?</dt>
+          <dd>No. It's stateless — vectors go straight to this server's Qdrant, and metadata is written back via the import endpoint.</dd>
+          <dt>What if the GPU produces bad vectors?</dt>
+          <dd>The server validates every vector for NaN/Inf and rejects corrupt upserts loudly, so a misconfigured GPU fails safe.</dd>
+          <dt>Can I interrupt and resume?</dt>
+          <dd>Yes. Ctrl+C at any time and re-run — already-indexed records are skipped automatically.</dd>
+          <dt>Where is the full documentation?</dt>
+          <dd>See <code>OFFLOAD.md</code> in the repository root for the complete guide, including ROCm troubleshooting and all command flags.</dd>
         </dl>
       </details>
     </div>
@@ -803,25 +869,28 @@
           .finally(function() { importInput.value = ''; });
       });
 
-      // ── Transfer Guide Modal ──
-      var btnGuide = document.getElementById('btn-transfer-guide');
-      var guideModal = document.getElementById('transfer-guide-modal');
-      var guideClose = guideModal?.querySelector('.modal-close');
-      if (btnGuide && guideModal) {
-        function openGuide() {
-          guideModal.setAttribute('aria-hidden', 'false');
-          guideModal.classList.add('visible');
+      // ── Guide Modals (transfer + GPU offload) ──
+      function wireModal(buttonId, modalId) {
+        var btn = document.getElementById(buttonId);
+        var modal = document.getElementById(modalId);
+        var close = modal?.querySelector('.modal-close');
+        if (!btn || !modal) return;
+        function open() {
+          modal.setAttribute('aria-hidden', 'false');
+          modal.classList.add('visible');
         }
-        function closeGuide() {
-          guideModal.classList.remove('visible');
-          guideModal.setAttribute('aria-hidden', 'true');
+        function closeIt() {
+          modal.classList.remove('visible');
+          modal.setAttribute('aria-hidden', 'true');
         }
-        btnGuide.addEventListener('click', openGuide);
-        if (guideClose) guideClose.addEventListener('click', closeGuide);
-        guideModal.addEventListener('click', function(e) {
-          if (e.target === guideModal) closeGuide();
+        btn.addEventListener('click', open);
+        if (close) close.addEventListener('click', closeIt);
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) closeIt();
         });
       }
+      wireModal('btn-transfer-guide', 'transfer-guide-modal');
+      wireModal('btn-offload-guide', 'offload-guide-modal');
     })();
   </script>
 </body>

@@ -199,3 +199,38 @@ class ExportImportTest(TestCase):
         self.assertEqual(resp.status_code, 400)
         data = json.loads(resp.content)
         self.assertIn("No file", data["error"])
+
+    # ── pending_only filter ──
+
+    def test_export_pending_only_returns_unindexed(self) -> None:
+        """pending_only=true should return only records with is_indexed=False."""
+        resp = self.client.get("/api/export_library?pending_only=true")
+        records = self._parse_export_response(resp)
+        paths = {r["file_path"] for r in records}
+        # Only c.raw is not indexed
+        self.assertEqual(paths, {"/photos/c.raw"})
+
+    # ── Image-by-id endpoint ──
+
+    def test_image_endpoint_requires_auth(self) -> None:
+        """Unauthenticated requests get 401, not the image."""
+        from latent_search.server.indexing.models.media import IndexedMedia
+
+        media = IndexedMedia.objects.get(file_path="/photos/a.jpg")
+        anon = Client()
+        resp = anon.get(f"/api/media/{media.id}/image")
+        self.assertEqual(resp.status_code, 401)
+
+    def test_image_endpoint_404_for_unknown_id(self) -> None:
+        resp = self.client.get("/api/media/999999/image")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_image_endpoint_410_for_missing_file(self) -> None:
+        """Record exists but file is gone from disk → 410 Gone."""
+        resp = self.client.get("/api/media/99999999/image")
+        # Use a real record whose path doesn't exist on disk
+        from latent_search.server.indexing.models.media import IndexedMedia
+
+        media = IndexedMedia.objects.get(file_path="/photos/a.jpg")
+        resp = self.client.get(f"/api/media/{media.id}/image")
+        self.assertEqual(resp.status_code, 410)

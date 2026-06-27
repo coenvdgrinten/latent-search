@@ -1,6 +1,7 @@
 from latent_search.server.indexing.services.library_transfer import (
     export_library,
     import_library,
+    serve_media_image,
 )
 from latent_search.server.indexing.views.admin_ops import (
     get_stats,
@@ -25,6 +26,7 @@ __all__ = [
     "save_settings",
     "export_library",
     "import_library",
+    "serve_media_image",
     "login_view",
     "logout_view",
 ]
