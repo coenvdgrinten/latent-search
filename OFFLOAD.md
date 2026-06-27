@@ -84,17 +84,20 @@ when the GPU is busy.
 ## Running the offload
 
 ```bash
-# Point at the Unraid box:
-export QDRANT_URL=http://unraid-ip:6333
-export QDRANT_API_KEY=...   # if your Qdrant requires one
-
 # Run the offload (VLM + CLIP + BGE, write to remote Qdrant + remote LatentSearch):
 ./manage offload_index \
   --api-url http://unraid-ip:8000 \
   --api-user admin \
   --api-password '...' \
+  --qdrant-url http://unraid-ip:6333 \
+  --qdrant-api-key '...' \
   --batch-size 100
 ```
+
+> **Note on `--qdrant-url`**: the default derives from `--api-url` by swapping
+> the port to 6333. If your LatentSearch is behind a reverse proxy (e.g.
+> Cloudflare Tunnel) but Qdrant is only exposed on the LAN, you must pass
+> `--qdrant-url` explicitly with the LAN IP.
 
 ### Useful flags
 
@@ -103,8 +106,10 @@ export QDRANT_API_KEY=...   # if your Qdrant requires one
 | `--limit N` | Only process N records (for testing). |
 | `--dry-run` | Do everything except the Qdrant upsert and the import POST. |
 | `--skip-vlm` | Skip VLM captioning; only generate embeddings from existing captions. |
+| `--skip-sparse` | Skip SPLADE sparse encoding (needed when torch < 2.6 blocks `.bin` weights). |
 | `--reprocess` | Process already-indexed records too (rebuild vectors). |
 | `--qdrant-url` | Override Qdrant URL (defaults to `<api-url host>:6333`). |
+| `--qdrant-api-key` | Qdrant API key (required if Qdrant has auth enabled). |
 | `--qdrant-collection` | Override collection name (default `media_embeddings`). |
 
 ## Testing the pipeline (layered)
