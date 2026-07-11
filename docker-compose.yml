@@ -42,6 +42,23 @@ services:
     tmpfs:
       - /tmp:noexec,nosuid,size=512m
 
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+    devices:
+      - /dev/nvidia0
+      - /dev/nvidiactl
+      - /dev/nvidia-uvm
+
   watcher:
     build: .
     container_name: latentsearch-watcher
