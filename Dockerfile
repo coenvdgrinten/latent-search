@@ -20,7 +20,7 @@ specs = tomllib.load(open('pyproject.toml', 'rb'))['project']['dependencies']; \
 print('\n'.join(specs))" > requirements.txt
 
 RUN pip install --prefix=/install \
-    --extra-index-url https://download.pytorch.org/whl/cpu \
+    --extra-index-url https://download.pytorch.org/whl/cu124 \
     --no-cache-dir \
     -r requirements.txt
 

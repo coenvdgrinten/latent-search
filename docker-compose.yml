@@ -45,6 +45,7 @@ services:
       - /tmp:noexec,nosuid,size=512m
 
 
+    runtime: nvidia
     deploy:
       resources:
         reservations:
@@ -52,11 +53,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    runtime: nvidia
-    devices:
-      - /dev/nvidia0
-      - /dev/nvidiactl
-      - /dev/nvidia-uvm
 
   watcher:
     build: .
@@ -76,12 +72,22 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-1000}"
       MEDIA_WATCH_ENABLED: "true"
+      NVIDIA_VISIBLE_DEVICES: all
+      PYTORCH_CUDA_ALLOC_CONF: max_split_size_mb:128
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./data:/app/data
       - /mnt/user/nextcloud:/nc_data:r
       - hf_cache:/cache/huggingface
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     # Entry point for watcher service
     command: ["python", "manage.py", "watch_media"]
 
