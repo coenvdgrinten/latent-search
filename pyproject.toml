@@ -23,7 +23,6 @@ dependencies = [
     "gunicorn>=23.0.0",
     "whitenoise>=6.7.0",
     "watchdog>=6.0.0",
-    "autoawq>=0.2.0",
 ]
 
 [build-system]
