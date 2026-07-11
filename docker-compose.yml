@@ -34,6 +34,9 @@ services:
       LS_PASSWORD: "${LS_PASSWORD:-}"
       NVIDIA_VISIBLE_DEVICES: all
       PYTORCH_CUDA_ALLOC_CONF: max_split_size_mb:128
+      # VLM uses the AWQ quantized model (~2 GB), so it fits alongside CLIP+BGE
+      # on 8 GB VRAM. Override with LS_VLM_DEVICE=cpu if VRAM is too constrained.
+      LS_VLM_DEVICE: "${LS_VLM_DEVICE:-}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

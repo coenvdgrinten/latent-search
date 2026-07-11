@@ -6,6 +6,7 @@ semantic search indexing. Runs entirely on CPU with lazy loading.
 """
 
 import logging
+import os
 from collections.abc import Sequence
 from pathlib import Path
 from threading import Lock
@@ -21,8 +22,9 @@ from latent_search.server.indexing.services.device import get_device
 
 logger = logging.getLogger(__name__)
 
-# Hugging Face model ID for Qwen2.5-VL-3B
-MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
+# Hugging Face model ID — INT4 AWQ quantized variant (~2 GB VRAM vs ~6 GB for BF16).
+# To use full-precision, override via the LS_VLM_MODEL env var or pass model_id directly.
+MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct-AWQ"
 
 # System prompt optimized for search-caption generation
 SYSTEM_PROMPT = (
@@ -42,7 +44,10 @@ class VLMService:
         self._processor: AutoProcessor | None = None
         self._model: Qwen2_5_VLForConditionalGeneration | None = None
         self._lock = Lock()
-        self.device = get_device()
+        # LS_VLM_DEVICE overrides the global device for VLM only.
+        # The AWQ model is ~2 GB, so it fits alongside CLIP+BGE on 8 GB VRAM.
+        # Set LS_VLM_DEVICE=cpu to force CPU if VRAM is too constrained.
+        self.device = os.getenv("LS_VLM_DEVICE") or get_device()
 
     @property
     def processor(self) -> AutoProcessor:
@@ -66,9 +71,11 @@ class VLMService:
                         f"Loading VLM model: {self.model_id} "
                         f"(this may take a moment on first load)"
                     )
+                    # AWQ weights are INT4; torch_dtype="auto" lets the model
+                    # pick bfloat16 for activations, which autoawq requires.
                     self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                         self.model_id,
-                        torch_dtype=torch.float16,
+                        torch_dtype="auto",
                         device_map=self.device,
                         trust_remote_code=True,
                     )
