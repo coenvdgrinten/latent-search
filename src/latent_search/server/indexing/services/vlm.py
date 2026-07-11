@@ -71,16 +71,11 @@ class VLMService:
                         f"Loading VLM model: {self.model_id} "
                         f"(this may take a moment on first load)"
                     )
-                    # float16 on CUDA saves VRAM; float32 on CPU avoids
-                    # unsupported half-precision ops on some platforms.
-                    dtype = (
-                        torch.float16
-                        if self.device != "cpu"
-                        else torch.float32
-                    )
+                    # float16 halves RAM/VRAM usage (~6 GB vs ~12 GB for float32).
+                    # PyTorch supports float16 inference on CPU.
                     self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                         self.model_id,
-                        torch_dtype=dtype,
+                        torch_dtype=torch.float16,
                         device_map=self.device,
                         trust_remote_code=True,
                     )
