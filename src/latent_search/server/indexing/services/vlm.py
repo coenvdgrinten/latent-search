@@ -88,8 +88,6 @@ class VLMService:
         """
         image = Image.open(image_path).convert("RGB")
 
-        image_tensor = image if self.device == "cpu" else image.to(self.device)
-
         # Build conversation for the processor
         messages = [
             {
@@ -101,7 +99,7 @@ class VLMService:
                 "content": [
                     {
                         "type": "image",
-                        "image": image_tensor,
+                        "image": image,
                     },
                     {"type": "text", "text": "Describe this image concisely."},
                 ],
@@ -116,7 +114,7 @@ class VLMService:
         # convert the resulting lists to tensors manually.
         inputs = self.processor(  # ty: ignore[call-non-callable]
             text=[text_prompt],
-            images=[image_tensor],
+            images=[image],
             padding=True,
         )
         # transformers 5.x Qwen2.5-VL processor returns lists for some fields
